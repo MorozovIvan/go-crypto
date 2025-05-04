@@ -1,0 +1,50 @@
+.PHONY: start-backend stop-backend start-frontend stop-frontend restart clean
+
+# Start the backend server
+start-backend:
+	@echo "Starting backend server..."
+	@go run main.go
+
+# Stop the backend server
+stop-backend:
+	@echo "Stopping backend server..."
+	@lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+
+# Start the frontend server
+start-frontend:
+	@echo "Starting frontend server..."
+	@cd frontend && npm run dev
+
+# Stop the frontend server
+stop-frontend:
+	@echo "Stopping frontend server..."
+	@lsof -ti:5173 | xargs kill -9 2>/dev/null || true
+
+# Restart both servers
+restart: stop-backend stop-frontend
+	@echo "Restarting servers..."
+	@make start-backend & make start-frontend
+
+# Clean up all processes
+clean:
+	@echo "Cleaning up processes..."
+	@lsof -ti:8080,8081,5173 | xargs kill -9 2>/dev/null || true
+
+# Start both servers
+start: start-backend start-frontend
+
+# Stop both servers
+stop: stop-backend stop-frontend
+
+# Help command
+help:
+	@echo "Available commands:"
+	@echo "  make start-backend    - Start the backend server"
+	@echo "  make stop-backend     - Stop the backend server"
+	@echo "  make start-frontend   - Start the frontend server"
+	@echo "  make stop-frontend    - Stop the frontend server"
+	@echo "  make restart         - Restart both servers"
+	@echo "  make clean           - Clean up all server processes"
+	@echo "  make start           - Start both servers"
+	@echo "  make stop            - Stop both servers"
+	@echo "  make help            - Show this help message" 
