@@ -6365,3 +6365,84 @@
 2025-05-11T15:37:41.506+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503181856572834656}
 2025-05-11T15:37:41.533+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503181858609810433}
 2025-05-11T15:37:41.533+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:38:41.506+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503182114270453416}
+2025-05-11T15:38:41.532+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503182116309985281}
+2025-05-11T15:38:41.532+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:39:41.505+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503182371967954176}
+2025-05-11T15:39:41.539+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503182374008866817}
+2025-05-11T15:39:41.540+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:40:41.505+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503182629665612936}
+2025-05-11T15:40:41.543+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503182631708935169}
+2025-05-11T15:40:41.543+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:41:41.509+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503182887368097696}
+2025-05-11T15:41:41.537+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503182889415820289}
+2025-05-11T15:41:41.537+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:42:41.519+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503183145076237456}
+2025-05-11T15:42:41.550+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503183147121398785}
+2025-05-11T15:42:41.550+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:43:41.519+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503183402774369216}
+2025-05-11T15:43:41.549+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503183404821955585}
+2025-05-11T15:43:41.549+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:44:41.519+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503183660472141976}
+2025-05-11T15:44:41.546+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503183662506340353}
+2025-05-11T15:44:41.546+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:45:41.519+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503183918170009736}
+2025-05-11T15:45:41.550+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503183920225000449}
+2025-05-11T15:45:41.550+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:46:41.519+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503184175868035496}
+2025-05-11T15:46:41.545+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503184177904420865}
+2025-05-11T15:46:41.545+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:47:41.518+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503184433565056256}
+2025-05-11T15:47:41.544+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503184435600380929}
+2025-05-11T15:47:41.544+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:48:41.518+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503184691263649016}
+2025-05-11T15:48:41.545+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503184693304080385}
+2025-05-11T15:48:41.545+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:49:41.518+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503184948961352776}
+2025-05-11T15:49:41.545+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503184951000707073}
+2025-05-11T15:49:41.545+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:50:41.518+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503185206659171536}
+2025-05-11T15:50:41.548+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503185208716060673}
+2025-05-11T15:50:41.548+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:51:41.518+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503185464357054296}
+2025-05-11T15:51:41.549+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503185466417516545}
+2025-05-11T15:51:41.549+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:52:41.517+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503185722054897056}
+2025-05-11T15:52:41.548+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503185724115032065}
+2025-05-11T15:52:41.548+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:53:41.517+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503185979752735816}
+2025-05-11T15:53:41.544+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503185981800679425}
+2025-05-11T15:53:41.544+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:54:41.517+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503186237450572576}
+2025-05-11T15:54:41.551+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503186239513603073}
+2025-05-11T15:54:41.551+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:55:41.517+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503186495148294336}
+2025-05-11T15:55:41.550+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503186497224930305}
+2025-05-11T15:55:41.550+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:56:41.517+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503186752846134096}
+2025-05-11T15:56:41.543+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503186754895892481}
+2025-05-11T15:56:41.543+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:57:41.517+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503187010544217856}
+2025-05-11T15:57:41.546+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503187012604971009}
+2025-05-11T15:57:41.546+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:58:41.516+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503187268241786616}
+2025-05-11T15:58:41.542+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503187270293639169}
+2025-05-11T15:58:41.542+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T15:59:41.516+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503187525939747376}
+2025-05-11T15:59:41.545+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503187527996376065}
+2025-05-11T15:59:41.545+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T16:00:41.516+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503187783637489136}
+2025-05-11T16:00:41.545+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503187785707201537}
+2025-05-11T16:00:41.545+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T16:01:41.515+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503188041335271896}
+2025-05-11T16:01:41.540+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503188043384894465}
+2025-05-11T16:01:41.540+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T16:02:41.516+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503188299033523656}
+2025-05-11T16:02:41.541+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503188301089821697}
+2025-05-11T16:02:41.541+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T16:03:41.515+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503188556731157416}
+2025-05-11T16:03:41.542+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503188558791789569}
+2025-05-11T16:03:41.542+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T16:04:41.515+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503188814428805176}
+2025-05-11T16:04:41.541+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503188816488576001}
+2025-05-11T16:04:41.541+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
