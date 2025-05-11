@@ -6,7 +6,7 @@ This document describes all the metrics used in the Market Analysis dashboard an
 
 ## Metrics Overview
 
-### 1. **Fear & Greed Index**
+### 1. **Fear & Greed Index** (done)
 
 - **What:** Measures market sentiment (0 = extreme fear, 100 = extreme greed).
 - **Why:** Contrarian indicator. Buy when others are fearful, sell when greedy.
@@ -24,7 +24,7 @@ This document describes all the metrics used in the Market Analysis dashboard an
   - Sell: <25 (Bitcoin season)
   - Hold: 25–75
 
-### 3. **BTC Dominance**
+### 3. **BTC Dominance** (done)
 
 - **What:** Bitcoin's market cap as a % of total crypto market cap.
 - **Why:** Indicates market direction and risk appetite.

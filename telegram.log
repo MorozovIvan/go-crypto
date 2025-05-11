@@ -13,3 +13,4 @@
 2025/05/11 15:30:41.481647 Server starting on port 8080
 2025/05/11 15:32:54.339544 Received authentication request for phone: +380500232802
 2025/05/11 15:32:56.006549 Authentication failed: callback: too many attempts. Please wait 24 hours before trying again. This is a security measure to protect your account
+2025/05/11 17:02:24.496770 Server starting on port 8080
