@@ -18,6 +18,9 @@
         <div v-else-if="currentView === 'market'">
           <MarketAnalysis />
         </div>
+        <div v-else-if="currentView === 'solana-wallets'">
+          <ProfitableSolanaWallets />
+        </div>
       </main>
     </div>
     <AppFooter />
@@ -60,6 +63,7 @@ import AppSidebar from './components/AppSidebar.vue'
 import AppFooter from './components/AppFooter.vue'
 import MainContent from './components/MainContent.vue'
 import MarketAnalysis from './components/MarketAnalysis.vue'
+import ProfitableSolanaWallets from './components/ProfitableSolanaWallets.vue'
 
 const API_BASE_URL = 'http://localhost:8080'
 
@@ -70,7 +74,8 @@ export default {
     AppSidebar,
     AppFooter,
     MainContent,
-    MarketAnalysis
+    MarketAnalysis,
+    ProfitableSolanaWallets
   },
   data() {
     return {

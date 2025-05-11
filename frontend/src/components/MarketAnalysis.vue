@@ -303,12 +303,7 @@ export default defineComponent({
     async fetchBTCDominance() {
       const idx = this.metrics.findIndex(m => m.key === 'btc_dominance');
       try {
-        const apiKey = import.meta.env.VITE_CMC_API_KEY;
-        const res = await fetch('https://pro-api.coinmarketcap.com/v1/global-metrics/quotes/latest', {
-          headers: {
-            'X-CMC_PRO_API_KEY': apiKey
-          }
-        });
+        const res = await fetch('http://localhost:5002/api/cmc/global');
         const data = await res.json();
         if (data && data.data && data.data.btc_dominance) {
           const value = data.data.btc_dominance;

@@ -23,6 +23,17 @@
           </svg>
           <span>Market Analysis</span>
         </button>
+        <button
+          @click="$emit('change-view', 'solana-wallets')"
+          class="w-full flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          :class="{ 'bg-gray-100': currentView === 'solana-wallets' }"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="2" y="7" width="20" height="10" rx="2" stroke-width="2" stroke="currentColor"/>
+            <path d="M16 12h.01" stroke-width="2" stroke-linecap="round" stroke="currentColor"/>
+          </svg>
+          <span>Find profitable Solana wallets</span>
+        </button>
       </nav>
     </div>
   </aside>

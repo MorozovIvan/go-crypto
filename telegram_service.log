@@ -6681,3 +6681,509 @@
 2025-05-11T17:06:24.525+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503204718702463264}
 2025-05-11T17:06:24.555+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503204720775597057}
 2025-05-11T17:06:24.555+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:30:49.993+0200	INFO	conn.mtproto.rpc	Initialized	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "retry_interval": "5s", "max_retries": 5}
+2025-05-11T17:30:49.993+0200	INFO	Starting	{"v": "v0.120.0"}
+2025-05-11T17:30:49.997+0200	INFO	Connection restored from state	{"v": "v0.120.0", "addr": "", "key_id": "4e6302198b6a99f5"}
+2025-05-11T17:30:49.997+0200	INFO	conn.mtproto.rpc	Initialized	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "retry_interval": "5s", "max_retries": 5}
+2025-05-11T17:30:49.997+0200	DEBUG	conn.mtproto	Run: start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:30:50.021+0200	INFO	conn.mtproto	Key already exists	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:30:50.021+0200	DEBUG	conn.mtproto	Generating new session id	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:30:50.021+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "readLoop"}
+2025-05-11T17:30:50.021+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "ackLoop"}
+2025-05-11T17:30:50.021+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "pingLoop"}
+2025-05-11T17:30:50.021+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback"}
+2025-05-11T17:30:50.021+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "saltsLoop"}
+2025-05-11T17:30:50.021+0200	DEBUG	conn	Initializing	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:30:50.021+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "handleClose"}
+2025-05-11T17:30:50.021+0200	DEBUG	conn.mtproto.read	Read loop started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:30:50.021+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211014621449200}
+2025-05-11T17:30:50.022+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211014621449200}
+2025-05-11T17:30:50.022+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7503211014621449200}
+2025-05-11T17:30:50.022+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7503211014621449200}
+2025-05-11T17:30:50.048+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x73f1f8dc", "type_name": "message_container", "size_bytes": 88, "msg_id": 7503211014937504777}
+2025-05-11T17:30:50.048+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x9ec20908", "type_name": "new_session_created#9ec20908", "size_bytes": 28, "msg_id": 7503211014937504777}
+2025-05-11T17:30:50.048+0200	DEBUG	conn.mtproto	Session created	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "unique_id": -992269869451183945, "first_msg_id": 7503211014621449200, "first_msg_time": "2025-05-11T17:30:50.021+0200"}
+2025-05-11T17:30:50.048+0200	INFO	conn.mtproto	Salt updated	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "old": -695512787930043069, "new": 1579181040612984183}
+2025-05-11T17:30:50.048+0200	INFO	conn	SessionInit	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:30:50.048+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xb921bd04", "type_name": "get_future_salts#b921bd04", "msg_id": 7503211014647825200}
+2025-05-11T17:30:50.073+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xae500895", "type_name": "future_salts#ae500895", "size_bytes": 84, "msg_id": 7503211015049549825}
+2025-05-11T17:30:50.084+0200	DEBUG	conn.mtproto	Got future salts	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "server_time": "2025-05-11T17:30:50.000+0200"}
+2025-05-11T17:30:50.116+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 396, "msg_id": 7503211015236939777}
+2025-05-11T17:30:50.116+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x3072cfa1", "type_name": "gzip", "size_bytes": 384, "msg_id": 7503211014621449200}
+2025-05-11T17:30:50.116+0200	DEBUG	conn.mtproto	Decompressed	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xcc1a241e", "type_name": "config#cc1a241e", "size_bytes": 960, "msg_id": 7503211014621449200}
+2025-05-11T17:30:50.116+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211014621449200}
+2025-05-11T17:30:50.116+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211014621449200}
+2025-05-11T17:30:50.116+0200	DEBUG	conn.mtproto.group	Task complete	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback", "elapsed": "94.752292ms"}
+2025-05-11T17:30:50.116+0200	DEBUG	Ready	{"v": "v0.120.0"}
+2025-05-11T17:30:50.117+0200	DEBUG	Data saved	{"v": "v0.120.0", "key_id": "4e6302198b6a99f5"}
+2025-05-11T17:30:50.117+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x62d6b459", "type_name": "msgs_ack#62d6b459", "size_bytes": 20, "msg_id": 7503211014937504777}
+2025-05-11T17:30:50.117+0200	DEBUG	conn.mtproto	Received ack	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_ids": [7503211014621449200]}
+2025-05-11T17:30:50.117+0200	DEBUG	conn.mtproto.rpc	Acknowledge callback not set	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211014621449200}
+2025-05-11T17:31:05.023+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x62d6b459", "type_name": "msgs_ack#62d6b459", "msg_id": 7503211079047096640}
+2025-05-11T17:31:05.024+0200	DEBUG	conn.mtproto.ack	Ack	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_ids": [7503211015236939777]}
+2025-05-11T17:31:27.429+0200	INFO	Starting authentication process	{"phone": "+380500232802"}
+2025-05-11T17:31:27.430+0200	INFO	conn.mtproto.rpc	Initialized	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "retry_interval": "5s", "max_retries": 5}
+2025-05-11T17:31:27.430+0200	INFO	Starting	{"v": "v0.120.0"}
+2025-05-11T17:31:27.430+0200	DEBUG	conn.mtproto	Run: start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:31:27.455+0200	INFO	conn.mtproto	Generating new auth key	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:31:27.455+0200	DEBUG	conn.mtproto	Initializing new key exchange	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "timeout": "1m0s", "context_deadline": "2025-05-11T17:32:02.430+0200"}
+2025-05-11T17:31:27.455+0200	DEBUG	conn.mtproto.exchange	Sending ReqPqMultiRequest	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:31:27.479+0200	DEBUG	conn.mtproto.exchange	Received server ResPQ	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:31:27.583+0200	DEBUG	conn.mtproto.exchange	PQ decomposing complete	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "took": "103.1645ms"}
+2025-05-11T17:31:27.583+0200	DEBUG	conn.mtproto.exchange	Sending ReqDHParamsRequest	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:31:28.199+0200	DEBUG	conn.mtproto.exchange	Received server ServerDHParams	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:31:28.566+0200	DEBUG	conn.mtproto.exchange	Sending SetClientDHParamsRequest	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:31:29.042+0200	DEBUG	conn.mtproto.exchange	Received server DhGen	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:31:29.042+0200	INFO	conn.mtproto	Auth key generated	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "duration": "1.587708917s"}
+2025-05-11T17:31:29.042+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "readLoop"}
+2025-05-11T17:31:29.042+0200	DEBUG	conn.mtproto.read	Read loop started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:31:29.042+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "ackLoop"}
+2025-05-11T17:31:29.042+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "saltsLoop"}
+2025-05-11T17:31:29.043+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "pingLoop"}
+2025-05-11T17:31:29.043+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "handleClose"}
+2025-05-11T17:31:29.043+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback"}
+2025-05-11T17:31:29.043+0200	DEBUG	conn	Initializing	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:31:29.043+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182146325744}
+2025-05-11T17:31:29.043+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182146325744}
+2025-05-11T17:31:29.043+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7503211182146325744}
+2025-05-11T17:31:29.043+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7503211182146325744}
+2025-05-11T17:31:29.069+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x73f1f8dc", "type_name": "message_container", "size_bytes": 88, "msg_id": 7503211182529905673}
+2025-05-11T17:31:29.069+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x9ec20908", "type_name": "new_session_created#9ec20908", "size_bytes": 28, "msg_id": 7503211182529905673}
+2025-05-11T17:31:29.069+0200	DEBUG	conn.mtproto	Session created	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "unique_id": -1515509617848593884, "first_msg_id": 7503211182146325744, "first_msg_time": "2025-05-11T17:31:29.043+0200"}
+2025-05-11T17:31:29.069+0200	INFO	conn	SessionInit	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:31:29.069+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xb921bd04", "type_name": "get_future_salts#b921bd04", "msg_id": 7503211182172535744}
+2025-05-11T17:31:29.094+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xae500895", "type_name": "future_salts#ae500895", "size_bytes": 84, "msg_id": 7503211182642777089}
+2025-05-11T17:31:29.094+0200	DEBUG	conn.mtproto	Got future salts	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "server_time": "2025-05-11T17:31:29.000+0200"}
+2025-05-11T17:31:29.148+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 396, "msg_id": 7503211182878393345}
+2025-05-11T17:31:29.148+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x3072cfa1", "type_name": "gzip", "size_bytes": 384, "msg_id": 7503211182146325744}
+2025-05-11T17:31:29.149+0200	DEBUG	conn.mtproto	Decompressed	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xcc1a241e", "type_name": "config#cc1a241e", "size_bytes": 960, "msg_id": 7503211182146325744}
+2025-05-11T17:31:29.149+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182146325744}
+2025-05-11T17:31:29.149+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182146325744}
+2025-05-11T17:31:29.149+0200	DEBUG	conn.mtproto.group	Task complete	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback", "elapsed": "106.044042ms"}
+2025-05-11T17:31:29.149+0200	DEBUG	Ready	{"v": "v0.120.0"}
+2025-05-11T17:31:29.149+0200	INFO	Logging out any existing session
+2025-05-11T17:31:29.149+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182252410744}
+2025-05-11T17:31:29.149+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182252410744}
+2025-05-11T17:31:29.149+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7503211182252410744}
+2025-05-11T17:31:29.149+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7503211182252410744}
+2025-05-11T17:31:29.149+0200	DEBUG	Data saved	{"v": "v0.120.0", "key_id": "11db7c3f3f54d81e"}
+2025-05-11T17:31:29.149+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x62d6b459", "type_name": "msgs_ack#62d6b459", "size_bytes": 20, "msg_id": 7503211182529905673}
+2025-05-11T17:31:29.149+0200	DEBUG	conn.mtproto	Received ack	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_ids": [7503211182146325744]}
+2025-05-11T17:31:29.149+0200	DEBUG	conn.mtproto.rpc	Acknowledge callback not set	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182146325744}
+2025-05-11T17:31:29.222+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 20, "msg_id": 7503211183197158401}
+2025-05-11T17:31:29.223+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xc3a2835f", "type_name": "auth.loggedOut#c3a2835f", "size_bytes": 8, "msg_id": 7503211182252410744}
+2025-05-11T17:31:29.223+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182252410744}
+2025-05-11T17:31:29.223+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182252410744}
+2025-05-11T17:31:29.223+0200	DEBUG	conn	Invoke	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "duration": "73.858792ms", "ongoing": 0}
+2025-05-11T17:31:29.223+0200	INFO	Sending code request	{"phone": "+380500232802", "apiID": 26764638}
+2025-05-11T17:31:29.223+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182326321744}
+2025-05-11T17:31:29.223+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182326321744}
+2025-05-11T17:31:29.223+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7503211182326321744}
+2025-05-11T17:31:29.223+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7503211182326321744}
+2025-05-11T17:31:29.289+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 40, "msg_id": 7503211183477540865}
+2025-05-11T17:31:29.289+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x2144ca19", "type_name": "rpc_error#2144ca19", "size_bytes": 28, "msg_id": 7503211182326321744}
+2025-05-11T17:31:29.289+0200	DEBUG	conn.mtproto	Got error	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182326321744, "err_code": 400, "err_msg": "PHONE_CODE_EMPTY"}
+2025-05-11T17:31:29.289+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182326321744}
+2025-05-11T17:31:29.289+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182326321744}
+2025-05-11T17:31:29.289+0200	DEBUG	conn	Invoke	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "duration": "66.085958ms", "ongoing": 0}
+2025-05-11T17:31:29.289+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182392428744}
+2025-05-11T17:31:29.289+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182392428744}
+2025-05-11T17:31:29.289+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7503211182392428744}
+2025-05-11T17:31:29.289+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7503211182392428744}
+2025-05-11T17:31:29.374+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 40, "msg_id": 7503211183846157313}
+2025-05-11T17:31:29.374+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x2144ca19", "type_name": "rpc_error#2144ca19", "size_bytes": 28, "msg_id": 7503211182392428744}
+2025-05-11T17:31:29.374+0200	DEBUG	conn.mtproto	Got error	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182392428744, "err_code": 420, "err_msg": "FLOOD_WAIT_19960"}
+2025-05-11T17:31:29.374+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182392428744}
+2025-05-11T17:31:29.374+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503211182392428744}
+2025-05-11T17:31:29.374+0200	DEBUG	conn	Invoke	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "duration": "85.3635ms", "ongoing": 0}
+2025-05-11T17:31:29.374+0200	ERROR	Failed to send code	{"error": "rpcDoRequest: rpc error code 420: FLOOD_WAIT (19960)", "errorVerbose": "rpcDoRequest:\n    github.com/gotd/td/mtproto.(*Conn).Invoke\n        /Users/ivanmorozov/go/pkg/mod/github.com/gotd/td@v0.120.0/mtproto/rpc.go:44\n  - rpc error code 420: FLOOD_WAIT (19960)"}
+2025-05-11T17:31:29.374+0200	DEBUG	conn.mtproto.group	Task stopped	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "pingLoop", "error": "ping loop: context canceled", "errorVerbose": "ping loop:\n    github.com/gotd/td/mtproto.(*Conn).pingLoop\n        /Users/ivanmorozov/go/pkg/mod/github.com/gotd/td@v0.120.0/mtproto/ping.go:107\n  - context canceled", "elapsed": "331.799458ms"}
+2025-05-11T17:31:29.374+0200	DEBUG	conn.mtproto.group	Task stopped	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "saltsLoop", "error": "context canceled", "elapsed": "331.839083ms"}
+2025-05-11T17:31:29.374+0200	DEBUG	conn.mtproto.group	Task stopped	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "ackLoop", "error": "acl: context canceled", "errorVerbose": "acl:\n    github.com/gotd/td/mtproto.(*Conn).ackLoop\n        /Users/ivanmorozov/go/pkg/mod/github.com/gotd/td@v0.120.0/mtproto/ack.go:33\n  - context canceled", "elapsed": "331.881791ms"}
+2025-05-11T17:31:29.374+0200	DEBUG	conn.mtproto	Closing	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:31:29.374+0200	INFO	conn.mtproto.rpc	Close called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:31:29.375+0200	DEBUG	conn.mtproto.read	Read loop done	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "reason": "context canceled"}
+2025-05-11T17:31:29.375+0200	DEBUG	conn.mtproto.group	Task complete	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "handleClose", "elapsed": "332.039209ms"}
+2025-05-11T17:31:29.375+0200	DEBUG	conn.mtproto.group	Task stopped	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "readLoop", "error": "context canceled", "elapsed": "332.11475ms"}
+2025-05-11T17:31:29.375+0200	DEBUG	conn.mtproto	Run: end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:31:29.375+0200	INFO	Closed	{"v": "v0.120.0"}
+2025-05-11T17:31:50.023+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503211272321010960}
+2025-05-11T17:31:50.048+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503211272639680513}
+2025-05-11T17:31:50.048+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:32:50.024+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503211530019517720}
+2025-05-11T17:32:50.049+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503211530338241537}
+2025-05-11T17:32:50.049+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:33:50.024+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503211787718003480}
+2025-05-11T17:33:50.049+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503211788036546561}
+2025-05-11T17:33:50.049+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:34:50.025+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503212045416713240}
+2025-05-11T17:34:50.049+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503212045737880577}
+2025-05-11T17:34:50.050+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:35:50.026+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503212303115601000}
+2025-05-11T17:35:50.049+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503212303434896385}
+2025-05-11T17:35:50.049+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:36:50.025+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503212560813397760}
+2025-05-11T17:36:50.049+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503212561131188225}
+2025-05-11T17:36:50.049+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:37:50.017+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503212818503548520}
+2025-05-11T17:37:50.043+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503212818831671297}
+2025-05-11T17:37:50.043+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:38:50.017+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503213076201374280}
+2025-05-11T17:38:50.044+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503213076537004033}
+2025-05-11T17:38:50.045+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:39:50.017+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503213333899459040}
+2025-05-11T17:39:50.043+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503213334230473729}
+2025-05-11T17:39:50.044+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:40:50.017+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503213591597281800}
+2025-05-11T17:40:50.043+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503213591928531969}
+2025-05-11T17:40:50.043+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:41:50.019+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503213849296668560}
+2025-05-11T17:41:50.052+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503213849642489857}
+2025-05-11T17:41:50.053+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:42:50.017+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503214106993565320}
+2025-05-11T17:42:50.047+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503214107341938689}
+2025-05-11T17:42:50.047+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:43:50.019+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503214364692612080}
+2025-05-11T17:43:50.046+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503214365034763265}
+2025-05-11T17:43:50.046+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:44:50.019+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503214622391111840}
+2025-05-11T17:44:50.044+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503214622726406145}
+2025-05-11T17:44:50.044+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:45:50.019+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503214880089069600}
+2025-05-11T17:45:50.046+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503214880428998657}
+2025-05-11T17:45:50.046+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:46:50.019+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503215137787817360}
+2025-05-11T17:46:50.047+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503215138127960065}
+2025-05-11T17:46:50.047+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:47:50.019+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503215395485166120}
+2025-05-11T17:47:50.044+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503215395816554497}
+2025-05-11T17:47:50.044+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:48:50.020+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503215653184268880}
+2025-05-11T17:48:50.049+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503215653536243713}
+2025-05-11T17:48:50.049+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:49:50.020+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503215910882770640}
+2025-05-11T17:49:50.047+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503215911223470081}
+2025-05-11T17:49:50.047+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:50:50.020+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503216168580885400}
+2025-05-11T17:50:50.045+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503216168914879489}
+2025-05-11T17:50:50.045+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:51:50.021+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503216426279477160}
+2025-05-11T17:51:50.047+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503216426617676801}
+2025-05-11T17:51:50.047+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:52:50.022+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503216683978776920}
+2025-05-11T17:52:50.050+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503216684332361729}
+2025-05-11T17:52:50.051+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:53:50.021+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503216941675331680}
+2025-05-11T17:53:50.045+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503216942005175297}
+2025-05-11T17:53:50.045+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:54:26.074+0200	INFO	conn.mtproto.rpc	Initialized	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "retry_interval": "5s", "max_retries": 5}
+2025-05-11T17:54:26.075+0200	INFO	Starting	{"v": "v0.120.0"}
+2025-05-11T17:54:26.075+0200	INFO	Connection restored from state	{"v": "v0.120.0", "addr": "", "key_id": "11db7c3f3f54d81e"}
+2025-05-11T17:54:26.075+0200	INFO	conn.mtproto.rpc	Initialized	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "retry_interval": "5s", "max_retries": 5}
+2025-05-11T17:54:26.075+0200	DEBUG	conn.mtproto	Run: start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:54:26.099+0200	INFO	conn.mtproto	Key already exists	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:54:26.099+0200	DEBUG	conn.mtproto	Generating new session id	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:54:26.100+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "handleClose"}
+2025-05-11T17:54:26.100+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "ackLoop"}
+2025-05-11T17:54:26.100+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "saltsLoop"}
+2025-05-11T17:54:26.100+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback"}
+2025-05-11T17:54:26.100+0200	DEBUG	conn	Initializing	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:54:26.100+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "pingLoop"}
+2025-05-11T17:54:26.100+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "readLoop"}
+2025-05-11T17:54:26.100+0200	DEBUG	conn.mtproto.read	Read loop started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:54:26.100+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503217096373389336}
+2025-05-11T17:54:26.100+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503217096373389336}
+2025-05-11T17:54:26.100+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7503217096373389336}
+2025-05-11T17:54:26.100+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7503217096373389336}
+2025-05-11T17:54:26.125+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x73f1f8dc", "type_name": "message_container", "size_bytes": 88, "msg_id": 7503217096967136261}
+2025-05-11T17:54:26.125+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x9ec20908", "type_name": "new_session_created#9ec20908", "size_bytes": 28, "msg_id": 7503217096967136261}
+2025-05-11T17:54:26.125+0200	DEBUG	conn.mtproto	Session created	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "unique_id": -7175605078210773943, "first_msg_id": 7503217096373389336, "first_msg_time": "2025-05-11T17:54:26.100+0200"}
+2025-05-11T17:54:26.125+0200	INFO	conn	SessionInit	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:54:26.125+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xb921bd04", "type_name": "get_future_salts#b921bd04", "msg_id": 7503217096398873336}
+2025-05-11T17:54:26.131+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 396, "msg_id": 7503217096993765377}
+2025-05-11T17:54:26.131+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x3072cfa1", "type_name": "gzip", "size_bytes": 384, "msg_id": 7503217096373389336}
+2025-05-11T17:54:26.131+0200	DEBUG	conn.mtproto	Decompressed	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xcc1a241e", "type_name": "config#cc1a241e", "size_bytes": 960, "msg_id": 7503217096373389336}
+2025-05-11T17:54:26.131+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503217096373389336}
+2025-05-11T17:54:26.131+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503217096373389336}
+2025-05-11T17:54:26.131+0200	DEBUG	conn.mtproto.group	Task complete	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback", "elapsed": "31.803084ms"}
+2025-05-11T17:54:26.131+0200	DEBUG	Ready	{"v": "v0.120.0"}
+2025-05-11T17:54:26.133+0200	DEBUG	Data saved	{"v": "v0.120.0", "key_id": "11db7c3f3f54d81e"}
+2025-05-11T17:54:26.133+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x62d6b459", "type_name": "msgs_ack#62d6b459", "size_bytes": 20, "msg_id": 7503217096967136261}
+2025-05-11T17:54:26.133+0200	DEBUG	conn.mtproto	Received ack	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_ids": [7503217096373389336]}
+2025-05-11T17:54:26.133+0200	DEBUG	conn.mtproto.rpc	Acknowledge callback not set	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503217096373389336}
+2025-05-11T17:54:26.151+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xae500895", "type_name": "future_salts#ae500895", "size_bytes": 84, "msg_id": 7503217097079358465}
+2025-05-11T17:54:26.151+0200	DEBUG	conn.mtproto	Got future salts	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "server_time": "2025-05-11T17:54:26.000+0200"}
+2025-05-11T17:54:41.101+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x62d6b459", "type_name": "msgs_ack#62d6b459", "msg_id": 7503217160798997776}
+2025-05-11T17:54:41.102+0200	DEBUG	conn.mtproto.ack	Ack	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_ids": [7503217096993765377]}
+2025-05-11T17:55:26.101+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503217354072858096}
+2025-05-11T17:55:26.127+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503217354677787649}
+2025-05-11T17:55:26.127+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:56:26.101+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503217611771068856}
+2025-05-11T17:56:26.127+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503217612371709953}
+2025-05-11T17:56:26.127+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:57:26.102+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503217869469534616}
+2025-05-11T17:57:26.128+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503217870069906433}
+2025-05-11T17:57:26.128+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:26.102+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503218127168043376}
+2025-05-11T17:58:26.130+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503218127777793025}
+2025-05-11T17:58:26.130+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:53.547+0200	INFO	Starting authentication process	{"phone": "+380500232802"}
+2025-05-11T17:58:53.548+0200	INFO	conn.mtproto.rpc	Initialized	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "retry_interval": "5s", "max_retries": 5}
+2025-05-11T17:58:53.548+0200	INFO	Starting	{"v": "v0.120.0"}
+2025-05-11T17:58:53.548+0200	DEBUG	conn.mtproto	Run: start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:53.577+0200	INFO	conn.mtproto	Generating new auth key	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:53.577+0200	DEBUG	conn.mtproto	Initializing new key exchange	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "timeout": "1m0s", "context_deadline": "2025-05-11T17:59:28.548+0200"}
+2025-05-11T17:58:53.577+0200	DEBUG	conn.mtproto.exchange	Sending ReqPqMultiRequest	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:53.602+0200	DEBUG	conn.mtproto.exchange	Received server ResPQ	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:53.651+0200	DEBUG	conn.mtproto.exchange	PQ decomposing complete	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "took": "48.411167ms"}
+2025-05-11T17:58:53.651+0200	DEBUG	conn.mtproto.exchange	Sending ReqDHParamsRequest	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:54.196+0200	DEBUG	conn.mtproto.exchange	Received server ServerDHParams	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:54.539+0200	DEBUG	conn.mtproto.exchange	Sending SetClientDHParamsRequest	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:55.146+0200	DEBUG	conn.mtproto.exchange	Received server DhGen	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:55.146+0200	INFO	conn.mtproto	Auth key generated	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "duration": "1.5694085s"}
+2025-05-11T17:58:55.147+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "readLoop"}
+2025-05-11T17:58:55.147+0200	DEBUG	conn.mtproto.read	Read loop started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:55.147+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "saltsLoop"}
+2025-05-11T17:58:55.147+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback"}
+2025-05-11T17:58:55.147+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "handleClose"}
+2025-05-11T17:58:55.147+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "ackLoop"}
+2025-05-11T17:58:55.147+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "pingLoop"}
+2025-05-11T17:58:55.147+0200	DEBUG	conn	Initializing	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:55.148+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251767531960}
+2025-05-11T17:58:55.148+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251767531960}
+2025-05-11T17:58:55.148+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7503218251767531960}
+2025-05-11T17:58:55.148+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7503218251767531960}
+2025-05-11T17:58:55.173+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x73f1f8dc", "type_name": "message_container", "size_bytes": 88, "msg_id": 7503218252516235273}
+2025-05-11T17:58:55.173+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x9ec20908", "type_name": "new_session_created#9ec20908", "size_bytes": 28, "msg_id": 7503218252516235273}
+2025-05-11T17:58:55.173+0200	DEBUG	conn.mtproto	Session created	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "unique_id": -6135955761807691848, "first_msg_id": 7503218251767531960, "first_msg_time": "2025-05-11T17:58:55.148+0200"}
+2025-05-11T17:58:55.173+0200	INFO	conn	SessionInit	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:55.173+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xb921bd04", "type_name": "get_future_salts#b921bd04", "msg_id": 7503218251792946960}
+2025-05-11T17:58:55.199+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xae500895", "type_name": "future_salts#ae500895", "size_bytes": 84, "msg_id": 7503218252627668993}
+2025-05-11T17:58:55.199+0200	DEBUG	conn.mtproto	Got future salts	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "server_time": "2025-05-11T17:58:55.000+0200"}
+2025-05-11T17:58:55.226+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 396, "msg_id": 7503218252743315457}
+2025-05-11T17:58:55.226+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x3072cfa1", "type_name": "gzip", "size_bytes": 384, "msg_id": 7503218251767531960}
+2025-05-11T17:58:55.226+0200	DEBUG	conn.mtproto	Decompressed	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xcc1a241e", "type_name": "config#cc1a241e", "size_bytes": 960, "msg_id": 7503218251767531960}
+2025-05-11T17:58:55.226+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251767531960}
+2025-05-11T17:58:55.226+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251767531960}
+2025-05-11T17:58:55.226+0200	DEBUG	conn.mtproto.group	Task complete	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback", "elapsed": "79.638541ms"}
+2025-05-11T17:58:55.226+0200	DEBUG	Ready	{"v": "v0.120.0"}
+2025-05-11T17:58:55.226+0200	INFO	Logging out any existing session
+2025-05-11T17:58:55.226+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251846319960}
+2025-05-11T17:58:55.227+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251846319960}
+2025-05-11T17:58:55.227+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7503218251846319960}
+2025-05-11T17:58:55.227+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7503218251846319960}
+2025-05-11T17:58:55.227+0200	DEBUG	Data saved	{"v": "v0.120.0", "key_id": "c167902fe3634352"}
+2025-05-11T17:58:55.227+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x62d6b459", "type_name": "msgs_ack#62d6b459", "size_bytes": 20, "msg_id": 7503218252516235273}
+2025-05-11T17:58:55.227+0200	DEBUG	conn.mtproto	Received ack	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_ids": [7503218251767531960]}
+2025-05-11T17:58:55.227+0200	DEBUG	conn.mtproto.rpc	Acknowledge callback not set	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251767531960}
+2025-05-11T17:58:55.309+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 20, "msg_id": 7503218253084160001}
+2025-05-11T17:58:55.309+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xc3a2835f", "type_name": "auth.loggedOut#c3a2835f", "size_bytes": 8, "msg_id": 7503218251846319960}
+2025-05-11T17:58:55.309+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251846319960}
+2025-05-11T17:58:55.309+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251846319960}
+2025-05-11T17:58:55.309+0200	DEBUG	conn	Invoke	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "duration": "82.2765ms", "ongoing": 0}
+2025-05-11T17:58:55.309+0200	INFO	Sending code request	{"phone": "+380500232802", "apiID": 26764638}
+2025-05-11T17:58:55.309+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251928654960}
+2025-05-11T17:58:55.309+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251928654960}
+2025-05-11T17:58:55.309+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7503218251928654960}
+2025-05-11T17:58:55.309+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7503218251928654960}
+2025-05-11T17:58:55.378+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 40, "msg_id": 7503218253392721921}
+2025-05-11T17:58:55.378+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x2144ca19", "type_name": "rpc_error#2144ca19", "size_bytes": 28, "msg_id": 7503218251928654960}
+2025-05-11T17:58:55.378+0200	DEBUG	conn.mtproto	Got error	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251928654960, "err_code": 400, "err_msg": "PHONE_CODE_EMPTY"}
+2025-05-11T17:58:55.378+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251928654960}
+2025-05-11T17:58:55.378+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251928654960}
+2025-05-11T17:58:55.378+0200	DEBUG	conn	Invoke	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "duration": "69.313542ms", "ongoing": 0}
+2025-05-11T17:58:55.378+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251998004960}
+2025-05-11T17:58:55.378+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251998004960}
+2025-05-11T17:58:55.378+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7503218251998004960}
+2025-05-11T17:58:55.378+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7503218251998004960}
+2025-05-11T17:58:55.474+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 40, "msg_id": 7503218253808528385}
+2025-05-11T17:58:55.474+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x2144ca19", "type_name": "rpc_error#2144ca19", "size_bytes": 28, "msg_id": 7503218251998004960}
+2025-05-11T17:58:55.474+0200	DEBUG	conn.mtproto	Got error	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251998004960, "err_code": 420, "err_msg": "FLOOD_WAIT_18314"}
+2025-05-11T17:58:55.474+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251998004960}
+2025-05-11T17:58:55.474+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218251998004960}
+2025-05-11T17:58:55.474+0200	DEBUG	conn	Invoke	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "duration": "96.339791ms", "ongoing": 0}
+2025-05-11T17:58:55.475+0200	ERROR	Failed to send code	{"error": "rpcDoRequest: rpc error code 420: FLOOD_WAIT (18314)", "errorVerbose": "rpcDoRequest:\n    github.com/gotd/td/mtproto.(*Conn).Invoke\n        /Users/ivanmorozov/go/pkg/mod/github.com/gotd/td@v0.120.0/mtproto/rpc.go:44\n  - rpc error code 420: FLOOD_WAIT (18314)"}
+2025-05-11T17:58:55.475+0200	DEBUG	conn.mtproto	Closing	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:55.475+0200	INFO	conn.mtproto.rpc	Close called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:55.475+0200	DEBUG	conn.mtproto.group	Task stopped	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "ackLoop", "error": "acl: context canceled", "errorVerbose": "acl:\n    github.com/gotd/td/mtproto.(*Conn).ackLoop\n        /Users/ivanmorozov/go/pkg/mod/github.com/gotd/td@v0.120.0/mtproto/ack.go:33\n  - context canceled", "elapsed": "328.286917ms"}
+2025-05-11T17:58:55.475+0200	DEBUG	conn.mtproto.group	Task stopped	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "saltsLoop", "error": "context canceled", "elapsed": "328.3925ms"}
+2025-05-11T17:58:55.475+0200	DEBUG	conn.mtproto.group	Task stopped	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "pingLoop", "error": "ping loop: context canceled", "errorVerbose": "ping loop:\n    github.com/gotd/td/mtproto.(*Conn).pingLoop\n        /Users/ivanmorozov/go/pkg/mod/github.com/gotd/td@v0.120.0/mtproto/ping.go:107\n  - context canceled", "elapsed": "328.374417ms"}
+2025-05-11T17:58:55.475+0200	DEBUG	conn.mtproto.read	Read loop done	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "reason": "context canceled"}
+2025-05-11T17:58:55.475+0200	DEBUG	conn.mtproto.group	Task stopped	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "readLoop", "error": "context canceled", "elapsed": "328.626375ms"}
+2025-05-11T17:58:55.475+0200	DEBUG	conn.mtproto.group	Task complete	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "handleClose", "elapsed": "328.477041ms"}
+2025-05-11T17:58:55.475+0200	DEBUG	conn.mtproto	Run: end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:58:55.475+0200	INFO	Closed	{"v": "v0.120.0"}
+2025-05-11T17:59:15.726+0200	INFO	conn.mtproto.rpc	Initialized	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "retry_interval": "5s", "max_retries": 5}
+2025-05-11T17:59:15.726+0200	INFO	Starting	{"v": "v0.120.0"}
+2025-05-11T17:59:15.726+0200	INFO	Connection restored from state	{"v": "v0.120.0", "addr": "", "key_id": "c167902fe3634352"}
+2025-05-11T17:59:15.727+0200	INFO	conn.mtproto.rpc	Initialized	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "retry_interval": "5s", "max_retries": 5}
+2025-05-11T17:59:15.727+0200	DEBUG	conn.mtproto	Run: start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:59:15.751+0200	INFO	conn.mtproto	Key already exists	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:59:15.752+0200	DEBUG	conn.mtproto	Generating new session id	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:59:15.752+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "readLoop"}
+2025-05-11T17:59:15.752+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "handleClose"}
+2025-05-11T17:59:15.752+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "ackLoop"}
+2025-05-11T17:59:15.752+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "saltsLoop"}
+2025-05-11T17:59:15.752+0200	DEBUG	conn.mtproto.read	Read loop started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:59:15.752+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback"}
+2025-05-11T17:59:15.752+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "pingLoop"}
+2025-05-11T17:59:15.752+0200	DEBUG	conn	Initializing	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:59:15.752+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218338271001880}
+2025-05-11T17:59:15.752+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218338271001880}
+2025-05-11T17:59:15.752+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7503218338271001880}
+2025-05-11T17:59:15.752+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7503218338271001880}
+2025-05-11T17:59:15.778+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x73f1f8dc", "type_name": "message_container", "size_bytes": 88, "msg_id": 7503218341013698565}
+2025-05-11T17:59:15.778+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x9ec20908", "type_name": "new_session_created#9ec20908", "size_bytes": 28, "msg_id": 7503218341013698565}
+2025-05-11T17:59:15.778+0200	DEBUG	conn.mtproto	Session created	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "unique_id": 6550223301053939782, "first_msg_id": 7503218338271001880, "first_msg_time": "2025-05-11T17:59:15.752+0200"}
+2025-05-11T17:59:15.778+0200	INFO	conn	SessionInit	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T17:59:15.778+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xb921bd04", "type_name": "get_future_salts#b921bd04", "msg_id": 7503218338296992880}
+2025-05-11T17:59:15.782+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 396, "msg_id": 7503218341033886721}
+2025-05-11T17:59:15.782+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x3072cfa1", "type_name": "gzip", "size_bytes": 384, "msg_id": 7503218338271001880}
+2025-05-11T17:59:15.782+0200	DEBUG	conn.mtproto	Decompressed	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xcc1a241e", "type_name": "config#cc1a241e", "size_bytes": 960, "msg_id": 7503218338271001880}
+2025-05-11T17:59:15.782+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218338271001880}
+2025-05-11T17:59:15.782+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218338271001880}
+2025-05-11T17:59:15.782+0200	DEBUG	conn.mtproto.group	Task complete	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback", "elapsed": "30.520667ms"}
+2025-05-11T17:59:15.782+0200	DEBUG	Ready	{"v": "v0.120.0"}
+2025-05-11T17:59:15.783+0200	DEBUG	Data saved	{"v": "v0.120.0", "key_id": "c167902fe3634352"}
+2025-05-11T17:59:15.783+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x62d6b459", "type_name": "msgs_ack#62d6b459", "size_bytes": 20, "msg_id": 7503218341013698565}
+2025-05-11T17:59:15.783+0200	DEBUG	conn.mtproto	Received ack	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_ids": [7503218338271001880]}
+2025-05-11T17:59:15.783+0200	DEBUG	conn.mtproto.rpc	Acknowledge callback not set	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503218338271001880}
+2025-05-11T17:59:15.803+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xae500895", "type_name": "future_salts#ae500895", "size_bytes": 84, "msg_id": 7503218341123837953}
+2025-05-11T17:59:15.803+0200	DEBUG	conn.mtproto	Got future salts	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "server_time": "2025-05-11T17:59:15.000+0200"}
+2025-05-11T17:59:30.752+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x62d6b459", "type_name": "msgs_ack#62d6b459", "msg_id": 7503218402695777320}
+2025-05-11T17:59:30.753+0200	DEBUG	conn.mtproto.ack	Ack	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_ids": [7503218341033886721]}
+2025-05-11T18:00:15.754+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503218595970603640}
+2025-05-11T18:00:15.795+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503218598770945025}
+2025-05-11T18:00:15.795+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:01:15.754+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503218853669528400}
+2025-05-11T18:01:15.782+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503218856424559617}
+2025-05-11T18:01:15.782+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:02:15.756+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503219111367754160}
+2025-05-11T18:02:15.782+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503219114125456385}
+2025-05-11T18:02:15.782+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:03:15.754+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503219369065350920}
+2025-05-11T18:03:15.779+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503219371810417665}
+2025-05-11T18:03:15.779+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:04:15.754+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503219626763461680}
+2025-05-11T18:04:15.780+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503219629513081857}
+2025-05-11T18:04:15.780+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:05:15.755+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503219884462072440}
+2025-05-11T18:05:15.785+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503219887230539777}
+2025-05-11T18:05:15.785+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:06:18.436+0200	INFO	conn.mtproto.rpc	Initialized	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "retry_interval": "5s", "max_retries": 5}
+2025-05-11T18:06:18.436+0200	INFO	Starting	{"v": "v0.120.0"}
+2025-05-11T18:06:18.437+0200	INFO	Connection restored from state	{"v": "v0.120.0", "addr": "", "key_id": "c167902fe3634352"}
+2025-05-11T18:06:18.437+0200	INFO	conn.mtproto.rpc	Initialized	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "retry_interval": "5s", "max_retries": 5}
+2025-05-11T18:06:18.437+0200	DEBUG	conn.mtproto	Run: start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:06:18.462+0200	INFO	conn.mtproto	Key already exists	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:06:18.462+0200	DEBUG	conn.mtproto	Generating new session id	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:06:18.463+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "readLoop"}
+2025-05-11T18:06:18.463+0200	DEBUG	conn.mtproto.read	Read loop started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:06:18.463+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "saltsLoop"}
+2025-05-11T18:06:18.463+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "handleClose"}
+2025-05-11T18:06:18.463+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "pingLoop"}
+2025-05-11T18:06:18.463+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback"}
+2025-05-11T18:06:18.463+0200	DEBUG	conn	Initializing	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:06:18.463+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "ackLoop"}
+2025-05-11T18:06:18.463+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503220154753047088}
+2025-05-11T18:06:18.463+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503220154753047088}
+2025-05-11T18:06:18.463+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7503220154753047088}
+2025-05-11T18:06:18.463+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7503220154753047088}
+2025-05-11T18:06:18.489+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x73f1f8dc", "type_name": "message_container", "size_bytes": 88, "msg_id": 7503220156544196617}
+2025-05-11T18:06:18.489+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x9ec20908", "type_name": "new_session_created#9ec20908", "size_bytes": 28, "msg_id": 7503220156544196617}
+2025-05-11T18:06:18.489+0200	DEBUG	conn.mtproto	Session created	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "unique_id": -7501016989729124484, "first_msg_id": 7503220154753047088, "first_msg_time": "2025-05-11T18:06:18.463+0200"}
+2025-05-11T18:06:18.489+0200	INFO	conn	SessionInit	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:06:18.489+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xb921bd04", "type_name": "get_future_salts#b921bd04", "msg_id": 7503220154779428088}
+2025-05-11T18:06:18.516+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xae500895", "type_name": "future_salts#ae500895", "size_bytes": 84, "msg_id": 7503220156658073601}
+2025-05-11T18:06:18.516+0200	DEBUG	conn.mtproto	Got future salts	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "server_time": "2025-05-11T18:06:18.000+0200"}
+2025-05-11T18:06:18.560+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 396, "msg_id": 7503220156838486017}
+2025-05-11T18:06:18.560+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x3072cfa1", "type_name": "gzip", "size_bytes": 384, "msg_id": 7503220154753047088}
+2025-05-11T18:06:18.560+0200	DEBUG	conn.mtproto	Decompressed	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xcc1a241e", "type_name": "config#cc1a241e", "size_bytes": 960, "msg_id": 7503220154753047088}
+2025-05-11T18:06:18.560+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503220154753047088}
+2025-05-11T18:06:18.560+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503220154753047088}
+2025-05-11T18:06:18.560+0200	DEBUG	conn.mtproto.group	Task complete	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback", "elapsed": "97.848041ms"}
+2025-05-11T18:06:18.560+0200	DEBUG	Ready	{"v": "v0.120.0"}
+2025-05-11T18:06:18.562+0200	DEBUG	Data saved	{"v": "v0.120.0", "key_id": "c167902fe3634352"}
+2025-05-11T18:06:18.562+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x62d6b459", "type_name": "msgs_ack#62d6b459", "size_bytes": 20, "msg_id": 7503220156544196617}
+2025-05-11T18:06:18.562+0200	DEBUG	conn.mtproto	Received ack	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_ids": [7503220154753047088]}
+2025-05-11T18:06:18.562+0200	DEBUG	conn.mtproto.rpc	Acknowledge callback not set	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503220154753047088}
+2025-05-11T18:06:33.463+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x62d6b459", "type_name": "msgs_ack#62d6b459", "msg_id": 7503220219177857528}
+2025-05-11T18:06:33.464+0200	DEBUG	conn.mtproto.ack	Ack	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_ids": [7503220156838486017]}
+2025-05-11T18:07:18.464+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503220412452391848}
+2025-05-11T18:07:18.493+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503220414259493889}
+2025-05-11T18:07:18.493+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:07:35.748+0200	INFO	conn.mtproto.rpc	Initialized	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "retry_interval": "5s", "max_retries": 5}
+2025-05-11T18:07:35.748+0200	INFO	Starting	{"v": "v0.120.0"}
+2025-05-11T18:07:35.749+0200	INFO	Connection restored from state	{"v": "v0.120.0", "addr": "", "key_id": "c167902fe3634352"}
+2025-05-11T18:07:35.749+0200	INFO	conn.mtproto.rpc	Initialized	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "retry_interval": "5s", "max_retries": 5}
+2025-05-11T18:07:35.749+0200	DEBUG	conn.mtproto	Run: start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:07:35.774+0200	INFO	conn.mtproto	Key already exists	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:07:35.774+0200	DEBUG	conn.mtproto	Generating new session id	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:07:35.774+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "ackLoop"}
+2025-05-11T18:07:35.774+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "saltsLoop"}
+2025-05-11T18:07:35.774+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback"}
+2025-05-11T18:07:35.774+0200	DEBUG	conn	Initializing	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:07:35.774+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "readLoop"}
+2025-05-11T18:07:35.774+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "handleClose"}
+2025-05-11T18:07:35.774+0200	DEBUG	conn.mtproto.read	Read loop started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:07:35.774+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503220485776839880}
+2025-05-11T18:07:35.774+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503220485776839880}
+2025-05-11T18:07:35.774+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "pingLoop"}
+2025-05-11T18:07:35.774+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7503220485776839880}
+2025-05-11T18:07:35.774+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7503220485776839880}
+2025-05-11T18:07:35.801+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x73f1f8dc", "type_name": "message_container", "size_bytes": 88, "msg_id": 7503220488593288197}
+2025-05-11T18:07:35.801+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x9ec20908", "type_name": "new_session_created#9ec20908", "size_bytes": 28, "msg_id": 7503220488593288197}
+2025-05-11T18:07:35.801+0200	DEBUG	conn.mtproto	Session created	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "unique_id": 3158915988516125341, "first_msg_id": 7503220485776839880, "first_msg_time": "2025-05-11T18:07:35.774+0200"}
+2025-05-11T18:07:35.801+0200	INFO	conn	SessionInit	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:07:35.801+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xb921bd04", "type_name": "get_future_salts#b921bd04", "msg_id": 7503220485803749880}
+2025-05-11T18:07:35.808+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 396, "msg_id": 7503220488622390273}
+2025-05-11T18:07:35.808+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x3072cfa1", "type_name": "gzip", "size_bytes": 384, "msg_id": 7503220485776839880}
+2025-05-11T18:07:35.808+0200	DEBUG	conn.mtproto	Decompressed	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xcc1a241e", "type_name": "config#cc1a241e", "size_bytes": 960, "msg_id": 7503220485776839880}
+2025-05-11T18:07:35.808+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503220485776839880}
+2025-05-11T18:07:35.808+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503220485776839880}
+2025-05-11T18:07:35.808+0200	DEBUG	conn.mtproto.group	Task complete	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback", "elapsed": "34.127792ms"}
+2025-05-11T18:07:35.808+0200	DEBUG	Ready	{"v": "v0.120.0"}
+2025-05-11T18:07:35.809+0200	DEBUG	Data saved	{"v": "v0.120.0", "key_id": "c167902fe3634352"}
+2025-05-11T18:07:35.809+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x62d6b459", "type_name": "msgs_ack#62d6b459", "size_bytes": 20, "msg_id": 7503220488593288197}
+2025-05-11T18:07:35.809+0200	DEBUG	conn.mtproto	Received ack	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_ids": [7503220485776839880]}
+2025-05-11T18:07:35.809+0200	DEBUG	conn.mtproto.rpc	Acknowledge callback not set	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7503220485776839880}
+2025-05-11T18:07:35.828+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xae500895", "type_name": "future_salts#ae500895", "size_bytes": 84, "msg_id": 7503220488705224705}
+2025-05-11T18:07:35.828+0200	DEBUG	conn.mtproto	Got future salts	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "server_time": "2025-05-11T18:07:35.000+0200"}
+2025-05-11T18:07:50.775+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x62d6b459", "type_name": "msgs_ack#62d6b459", "msg_id": 7503220550202669320}
+2025-05-11T18:07:50.776+0200	DEBUG	conn.mtproto.ack	Ack	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_ids": [7503220488622390273]}
+2025-05-11T18:08:35.776+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503220743476379640}
+2025-05-11T18:08:35.801+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503220746294665217}
+2025-05-11T18:08:35.801+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:09:35.776+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503221001174788400}
+2025-05-11T18:09:35.802+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503221003996491777}
+2025-05-11T18:09:35.802+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:10:35.776+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503221258872954160}
+2025-05-11T18:10:35.802+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503221261689915393}
+2025-05-11T18:10:35.802+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:11:35.776+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503221516570902920}
+2025-05-11T18:11:35.802+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503221519388001281}
+2025-05-11T18:11:35.802+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:12:35.777+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503221774269591680}
+2025-05-11T18:12:35.805+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503221777087368193}
+2025-05-11T18:12:35.805+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:13:35.777+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503222031967897440}
+2025-05-11T18:13:35.803+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503222034787894273}
+2025-05-11T18:13:35.803+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:14:35.778+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503222289666490200}
+2025-05-11T18:14:35.803+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503222292488927233}
+2025-05-11T18:14:35.803+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:15:35.777+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503222547363776960}
+2025-05-11T18:15:35.802+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503222550182180865}
+2025-05-11T18:15:35.802+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:16:35.779+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503222805063266720}
+2025-05-11T18:16:35.806+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503222807895732225}
+2025-05-11T18:16:35.806+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:17:35.777+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503223062760440480}
+2025-05-11T18:17:35.804+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503223065580704769}
+2025-05-11T18:17:35.804+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:18:35.773+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503223320454388240}
+2025-05-11T18:18:35.802+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503223323293704193}
+2025-05-11T18:18:35.802+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-05-11T18:19:35.772+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf3427b8c", "type_name": "ping_delay_disconnect#f3427b8c", "msg_id": 7503223578151314000}
+2025-05-11T18:19:35.798+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x347773c5", "type_name": "pong#347773c5", "size_bytes": 20, "msg_id": 7503223580979693569}
+2025-05-11T18:19:35.798+0200	DEBUG	conn.mtproto	Pong	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
