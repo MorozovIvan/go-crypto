@@ -9,7 +9,9 @@ import (
 	"log"
 	"math/big"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 
 	"go-vue/pkg/config"
 	"go-vue/pkg/telegram"
@@ -90,28 +92,38 @@ func handleBalance(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func handleTelegramAuthLink(w http.ResponseWriter, r *http.Request) {
-	// This function is no longer needed
-}
-
 func handleTelegramAuthCallback(c *gin.Context) {
 	phone := c.Query("phone")
 	if phone == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Phone number is required"})
+		log.Printf("Phone number is missing from request")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "phone number is required"})
 		return
 	}
+
+	log.Printf("Received authentication request for phone: %s", phone)
 
 	// Start authentication process
 	err := telegramService.AuthenticateUser(phone)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to authenticate: %v", err)})
+		log.Printf("Authentication failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Get the phone code hash
+	hash := telegramService.GetPhoneCodeHash()
+	if hash == "" {
+		log.Printf("Failed to get phone code hash")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get phone code hash"})
+		return
+	}
+
+	log.Printf("Successfully sent verification code to %s", phone)
 
 	// Return the phone code hash along with success response
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"hash":    telegramService.GetPhoneCodeHash(),
+		"hash":    hash,
 	})
 }
 
@@ -162,21 +174,120 @@ func handleTelegramVerifyCode(c *gin.Context) {
 	telegramService.SetCode(data.Code)
 	telegramService.SetHash(data.Hash)
 
-	// If password is provided, set it
-	if data.Password != "" {
-		telegramService.SetPassword(data.Password)
-	}
-
-	// Verify the code
+	// First try to verify the code
 	err := telegramService.VerifyCode(data.Code)
 	if err != nil {
-		log.Printf("Failed to verify code: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to verify code: %v", err)})
+		log.Printf("Code verification result: %v", err)
+
+		// Check if this is a 2FA required error
+		if strings.Contains(err.Error(), "SESSION_PASSWORD_NEEDED") {
+			// 2FA is required
+			if data.Password == "" {
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"error":   "2FA_REQUIRED",
+					"message": "2FA password is required",
+				})
+				return
+			}
+
+			// Try to verify 2FA
+			err = telegramService.Verify2FA(data.Password)
+			if err != nil {
+				log.Printf("2FA verification failed: %v", err)
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"error":   "2FA_FAILED",
+					"message": err.Error(),
+				})
+				return
+			}
+		} else {
+			log.Printf("Code verification failed: %v", err)
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "CODE_VERIFICATION_FAILED",
+				"message": err.Error(),
+			})
+			return
+		}
+	}
+
+	// Get the user ID after successful authentication
+	userID, err := telegramService.GetCurrentUserID()
+	if err != nil {
+		log.Printf("Failed to get user ID: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "USER_ID_FAILED",
+			"message": "Failed to get user ID",
+		})
 		return
 	}
 
-	// Return success response
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	// Verify that we got a valid user ID
+	if userID == 0 {
+		log.Printf("Invalid user ID received: %d", userID)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "INVALID_USER_ID",
+			"message": "Failed to get valid user ID",
+		})
+		return
+	}
+
+	// Return success response with user ID
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"user_id": userID,
+	})
+}
+
+func handleTelegramVerify2FA(c *gin.Context) {
+	var data struct {
+		Password string `json:"password"`
+	}
+
+	if err := c.ShouldBindJSON(&data); err != nil {
+		log.Printf("Failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	log.Printf("Received 2FA verification request")
+
+	// Try to verify 2FA
+	err := telegramService.Verify2FA(data.Password)
+	if err != nil {
+		log.Printf("2FA verification failed: %v", err)
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "2FA_FAILED",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Get the user ID after successful authentication
+	userID, err := telegramService.GetCurrentUserID()
+	if err != nil {
+		log.Printf("Failed to get user ID: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "USER_ID_FAILED",
+			"message": "Failed to get user ID",
+		})
+		return
+	}
+
+	// Verify that we got a valid user ID
+	if userID == 0 {
+		log.Printf("Invalid user ID received: %d", userID)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "INVALID_USER_ID",
+			"message": "Failed to get valid user ID",
+		})
+		return
+	}
+
+	// Return success response with user ID
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"user_id": userID,
+	})
 }
 
 func handleGetGroups(c *gin.Context) {
@@ -201,6 +312,25 @@ func handleGetGroups(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"connected": true,
 		"groups":    groups,
+	})
+}
+
+func handleGetCurrentUser(c *gin.Context) {
+	user, err := telegramService.GetCurrentUser()
+	if err != nil {
+		if strings.Contains(err.Error(), "session expired") {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Session expired"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to get current user: %v", err)})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":         user.ID,
+		"username":   user.Username,
+		"first_name": user.FirstName,
+		"last_name":  user.LastName,
 	})
 }
 
@@ -230,6 +360,15 @@ func handleTelegramStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// Set up logging to file
+	logFile, logErr := os.OpenFile("telegram.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if logErr != nil {
+		log.Fatalf("Failed to open log file: %v", logErr)
+	}
+	defer logFile.Close()
+	log.SetOutput(logFile)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
+
 	// Load .env file
 	if err := godotenv.Load(); err != nil {
 		log.Printf("Warning: Error loading .env file: %v", err)
@@ -252,7 +391,7 @@ func main() {
 
 	// Configure CORS
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     []string{"http://localhost:5173"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -277,8 +416,10 @@ func main() {
 		// Telegram endpoints
 		api.GET("/telegram/auth/callback", handleTelegramAuthCallback)
 		api.POST("/telegram/auth/verify", handleTelegramVerifyCode)
+		api.POST("/telegram/auth/verify2fa", handleTelegramVerify2FA)
 		api.GET("/telegram/groups", handleGetGroups)
 		api.GET("/telegram/phone", handleTelegramPhone)
+		api.GET("/telegram/user", handleGetCurrentUser)
 	}
 
 	// Start server
