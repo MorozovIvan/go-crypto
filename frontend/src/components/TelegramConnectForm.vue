@@ -1,13 +1,13 @@
 <template>
-  <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-    <h2 class="text-2xl font-bold mb-6 text-center">Connect to Telegram</h2>
+  <div class="max-w-md p-6 mx-auto bg-white rounded-lg shadow-md">
+    <h2 class="mb-6 text-2xl font-bold text-center">Connect to Telegram</h2>
     
     <!-- Phone Number Form -->
     <form v-if="!showVerification" @submit.prevent="handlePhoneSubmit" class="space-y-4">
       <div>
-        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+        <label for="phone" class="block mb-1 text-sm font-medium text-gray-700">Phone Number</label>
         <div class="relative">
-          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">+</span>
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">+</span>
           <input
             type="tel"
             id="phone"
@@ -17,7 +17,7 @@
             :class="{ 'border-red-500': phoneError }"
             @input="formatPhoneNumber"
             maxlength="15"
-            :disabled="loading"
+            :disabled="loading || isFlooded"
           />
         </div>
         <p v-if="phoneError" class="mt-1 text-sm text-red-600">{{ phoneError }}</p>
@@ -26,20 +26,21 @@
       <button
         type="submit"
         class="w-full bg-[#0088cc] text-white px-4 py-2 rounded-lg hover:bg-[#0077b3] transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        :disabled="loading || !isValidPhone"
+        :disabled="loading || !isValidPhone || isFlooded"
       >
-        <svg v-if="loading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <svg v-if="loading" class="w-5 h-5 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        <span>{{ loading ? 'Sending Code...' : 'Send Verification Code' }}</span>
+        <span v-if="isFlooded">Please wait {{ formatWaitTime(floodWaitTime) }}</span>
+        <span v-else>{{ loading ? 'Sending Code...' : 'Send Verification Code' }}</span>
       </button>
     </form>
 
     <!-- Verification Code Form -->
     <form v-else @submit.prevent="handleVerificationSubmit" class="space-y-4">
       <div>
-        <label for="code" class="block text-sm font-medium text-gray-700 mb-1">Verification Code</label>
+        <label for="code" class="block mb-1 text-sm font-medium text-gray-700">Verification Code</label>
         <div class="relative">
           <input
             type="text"
@@ -50,9 +51,9 @@
             :class="{ 'border-red-500': codeError }"
             maxlength="5"
             @input="formatCode"
-            :disabled="loading"
+            :disabled="loading || isFlooded"
           />
-          <div v-if="countdown > 0" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">
+          <div v-if="countdown > 0" class="absolute text-sm text-gray-500 transform -translate-y-1/2 right-3 top-1/2">
             Resend in {{ countdown }}s
           </div>
         </div>
@@ -63,27 +64,28 @@
         <button
           type="button"
           @click="resetForm"
-          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="loading"
+          class="flex-1 px-4 py-2 text-gray-700 transition-colors border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="loading || isFlooded"
         >
           Back
         </button>
         <button
           type="submit"
           class="flex-1 bg-[#0088cc] text-white px-4 py-2 rounded-lg hover:bg-[#0077b3] transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="loading || !isValidCode"
+          :disabled="loading || !isValidCode || isFlooded"
         >
-          <svg v-if="loading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg v-if="loading" class="w-5 h-5 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <span>{{ loading ? 'Verifying...' : 'Verify Code' }}</span>
+          <span v-if="isFlooded">Please wait {{ formatWaitTime(floodWaitTime) }}</span>
+          <span v-else>{{ loading ? 'Verifying...' : 'Verify Code' }}</span>
         </button>
       </div>
     </form>
 
     <!-- Error Alert -->
-    <div v-if="generalError" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+    <div v-if="generalError" class="p-3 mt-4 border border-red-200 rounded-md bg-red-50">
       <p class="text-sm text-red-600">{{ generalError }}</p>
     </div>
   </div>
@@ -105,8 +107,15 @@ export default {
       countdown: 0,
       countdownInterval: null,
       retryCount: 0,
-      maxRetries: 3
+      maxRetries: 3,
+      isFlooded: false,
+      floodWaitTime: 0,
+      floodInterval: null
     }
+  },
+  mounted() {
+    // Clear any existing flood state when component is mounted
+    this.resetFloodState()
   },
   computed: {
     isValidPhone() {
@@ -119,6 +128,39 @@ export default {
     }
   },
   methods: {
+    resetFloodState() {
+      if (this.floodInterval) {
+        clearInterval(this.floodInterval)
+        this.floodInterval = null
+      }
+      this.isFlooded = false
+      this.floodWaitTime = 0
+    },
+    formatWaitTime(seconds) {
+      if (seconds < 60) {
+        return `${seconds} seconds`
+      } else if (seconds < 3600) {
+        const minutes = Math.floor(seconds / 60)
+        return `${minutes} minute${minutes > 1 ? 's' : ''}`
+      } else {
+        const hours = Math.floor(seconds / 3600)
+        return `${hours} hour${hours > 1 ? 's' : ''}`
+      }
+    },
+    startFloodTimer(seconds) {
+      // Clear any existing flood timer
+      this.resetFloodState()
+      
+      this.isFlooded = true
+      this.floodWaitTime = seconds
+      this.floodInterval = setInterval(() => {
+        if (this.floodWaitTime > 0) {
+          this.floodWaitTime--
+        } else {
+          this.resetFloodState()
+        }
+      }, 1000)
+    },
     formatPhoneNumber() {
       // Remove all non-digit characters
       this.phone = this.phone.replace(/\D/g, '')
@@ -159,6 +201,11 @@ export default {
         
         if (!response.ok) {
           console.error('Response not OK:', data)
+          if (data.error && (data.error.includes('FLOOD_WAIT') || data.error.includes('code 420'))) {
+            const waitTime = parseInt(data.error.match(/\((\d+)\)/)?.[1] || '30')
+            this.startFloodTimer(waitTime)
+            throw new Error(`Too many attempts. Please wait ${this.formatWaitTime(waitTime)} before trying again.`)
+          }
           throw new Error(data.error || 'Failed to start authentication')
         }
 
@@ -174,8 +221,12 @@ export default {
         this.retryCount = 0
       } catch (err) {
         console.error('Error in handlePhoneSubmit:', err)
-        this.phoneError = err.message
-        this.generalError = 'Failed to send verification code. Please try again.'
+        if (err.message.includes('Too many attempts')) {
+          this.generalError = err.message
+        } else {
+          this.phoneError = err.message
+          this.generalError = 'Failed to send verification code. Please try again.'
+        }
       } finally {
         this.loading = false
       }
@@ -205,9 +256,10 @@ export default {
         if (!response.ok) {
           const errorData = await response.json()
           
-          if (errorData.error && errorData.error.includes('please wait')) {
-            const waitTime = errorData.error.match(/\d+/)?.[0] || '30'
-            throw new Error(`Please wait ${waitTime} seconds before trying again`)
+          if (errorData.error && errorData.error.includes('PHONE_PASSWORD_FLOOD')) {
+            const waitTime = parseInt(errorData.error.match(/\d+/)?.[0] || '30')
+            this.startFloodTimer(waitTime)
+            throw new Error(`Too many attempts. Please wait ${this.formatWaitTime(waitTime)} before trying again.`)
           }
 
           if (errorData.error === '2FA_REQUIRED') {
@@ -247,12 +299,14 @@ export default {
         clearInterval(this.countdownInterval)
         this.countdown = 0
       }
+      this.resetFloodState()
     }
   },
-  beforeUnmount() {
+  beforeDestroy() {
     if (this.countdownInterval) {
       clearInterval(this.countdownInterval)
     }
+    this.resetFloodState()
   },
   emits: ['connected', '2fa-required']
 }

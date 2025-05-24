@@ -47,21 +47,22 @@ import {
   LineElement,
   CategoryScale,
   LinearScale,
-  PointElement
+  PointElement,
+  Filler
 } from 'chart.js';
 import MetricCard from './MetricCard.vue';
 
-ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement);
+ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement, Filler);
 
 export default defineComponent({
   name: 'MarketAnalysis',
   components: { MetricCard },
   data() {
-    // Initial state with loading/error for real metrics
+    console.log('MarketAnalysis: data() called');
     return {
       metrics: [
         {
-          key: 'fear_greed',
+          key: 'fear-greed',
           title: 'Fear & Greed Index',
           value: null,
           indicator: 'Hold',
@@ -73,18 +74,19 @@ export default defineComponent({
           loading: true
         },
         {
-          key: 'altcoin_index',
+          key: 'altcoin-season',
           title: 'Altcoin Season Index',
-          value: 80,
-          indicator: 'Buy',
-          score: 1,
+          value: null,
+          indicator: 'Hold',
+          score: 0,
           weight: 0.12,
-          chartData: [60, 65, 70, 75, 80],
-          chartLabels: ['5d', '4d', '3d', '2d', 'Now'],
-          error: false
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
         },
         {
-          key: 'btc_dominance',
+          key: 'btc-dominance',
           title: 'BTC Dominance',
           value: null,
           indicator: 'Hold',
@@ -98,72 +100,77 @@ export default defineComponent({
         {
           key: 'ssr',
           title: 'Stablecoin Supply Ratio',
-          value: 0.5,
-          indicator: 'Buy',
-          score: 1,
+          value: null,
+          indicator: 'Hold',
+          score: 0,
           weight: 0.08,
-          chartData: [0.7, 0.65, 0.6, 0.55, 0.5],
-          chartLabels: ['5d', '4d', '3d', '2d', 'Now'],
-          error: false
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
         },
         {
           key: 'rsi',
           title: 'RSI',
-          value: 28,
-          indicator: 'Buy',
-          score: 1,
+          value: null,
+          indicator: 'Hold',
+          score: 0,
           weight: 0.08,
-          chartData: [35, 33, 31, 29, 28],
-          chartLabels: ['5d', '4d', '3d', '2d', 'Now'],
-          error: false
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
         },
         {
-          key: 'market_cap',
+          key: 'market-cap',
           title: 'Total Market Cap Change (%)',
-          value: 6,
-          indicator: 'Buy',
-          score: 1,
+          value: null,
+          indicator: 'Hold',
+          score: 0,
           weight: 0.08,
-          chartData: [2, 3, 4, 5, 6],
-          chartLabels: ['5d', '4d', '3d', '2d', 'Now'],
-          error: false
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
         },
         {
           key: 'trends',
           title: 'Google Trends',
-          value: 20,
-          indicator: 'Buy',
-          score: 1,
+          value: null,
+          indicator: 'Hold',
+          score: 0,
           weight: 0.05,
-          chartData: [30, 28, 25, 22, 20],
-          chartLabels: ['5d', '4d', '3d', '2d', 'Now'],
-          error: false
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
         },
         {
-          key: 'ma_signal',
+          key: 'ma-signal',
           title: 'Moving Averages',
-          value: 'Golden Cross',
-          indicator: 'Buy',
-          score: 1,
+          value: null,
+          indicator: 'Hold',
+          score: 0,
           weight: 0.05,
-          chartData: [0, 0, 1, 1, 1],
-          chartLabels: ['5d', '4d', '3d', '2d', 'Now'],
-          error: false
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
         },
         {
-          key: 'volume',
+          key: 'volume-trend',
           title: 'Volume Trend',
-          value: 'High Rising',
-          indicator: 'Buy',
-          score: 1,
+          value: null,
+          indicator: 'Hold',
+          score: 0,
           weight: 0.05,
-          chartData: [0.5, 0.6, 0.7, 0.8, 1],
-          chartLabels: ['5d', '4d', '3d', '2d', 'Now'],
-          error: false
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
         },
-        // New metrics below
         {
-          key: 'exchange_flows',
+          key: 'exchange-flows',
           title: 'Exchange Flows',
           value: null,
           indicator: 'Hold',
@@ -171,10 +178,11 @@ export default defineComponent({
           weight: 0.05,
           chartData: [],
           chartLabels: [],
-          error: true
+          error: false,
+          loading: true
         },
         {
-          key: 'active_addresses',
+          key: 'active-addresses',
           title: 'Active Addresses',
           value: null,
           indicator: 'Hold',
@@ -182,10 +190,11 @@ export default defineComponent({
           weight: 0.04,
           chartData: [],
           chartLabels: [],
-          error: true
+          error: false,
+          loading: true
         },
         {
-          key: 'whale_tx',
+          key: 'whale-transactions',
           title: 'Whale Transactions',
           value: null,
           indicator: 'Hold',
@@ -193,10 +202,11 @@ export default defineComponent({
           weight: 0.04,
           chartData: [],
           chartLabels: [],
-          error: true
+          error: false,
+          loading: true
         },
         {
-          key: 'bollinger',
+          key: 'bollinger-bands',
           title: 'Bollinger Bands Width',
           value: null,
           indicator: 'Hold',
@@ -204,10 +214,11 @@ export default defineComponent({
           weight: 0.03,
           chartData: [],
           chartLabels: [],
-          error: true
+          error: false,
+          loading: true
         },
         {
-          key: 'funding_rate',
+          key: 'funding-rate',
           title: 'Funding Rate',
           value: null,
           indicator: 'Hold',
@@ -215,10 +226,11 @@ export default defineComponent({
           weight: 0.03,
           chartData: [],
           chartLabels: [],
-          error: true
+          error: false,
+          loading: true
         },
         {
-          key: 'open_interest',
+          key: 'open-interest',
           title: 'Open Interest',
           value: null,
           indicator: 'Hold',
@@ -226,10 +238,11 @@ export default defineComponent({
           weight: 0.03,
           chartData: [],
           chartLabels: [],
-          error: true
+          error: false,
+          loading: true
         },
         {
-          key: 'eth_btc_ratio',
+          key: 'eth-btc-ratio',
           title: 'ETH/BTC Ratio',
           value: null,
           indicator: 'Hold',
@@ -237,7 +250,8 @@ export default defineComponent({
           weight: 0.02,
           chartData: [],
           chartLabels: [],
-          error: true
+          error: false,
+          loading: true
         }
       ],
       totalScore: 0,
@@ -246,43 +260,158 @@ export default defineComponent({
       error: null
     };
   },
+  created() {
+    console.log('MarketAnalysis: created() hook called');
+  },
+  mounted() {
+    console.log('MarketAnalysis: mounted() hook called');
+    this.fetchAllMetrics();
+  },
+  beforeUnmount() {
+    console.log('MarketAnalysis: beforeUnmount() hook called');
+  },
   computed: {
     signalClass() {
       return {
         'text-green-600': this.signal === 'Buy',
         'text-red-600': this.signal === 'Sell',
-        'text-gray-600': this.signal === 'Hold',
-        'font-bold': true,
-        'text-lg': true
+        'text-yellow-600': this.signal === 'Hold'
       };
     }
   },
-  mounted() {
-    this.fetchFearGreed();
-    this.fetchBTCDominance();
-    this.fetchSSR();
-    this.fetchMarketCapChange();
-    this.fetchETHBTCRatio();
-    this.fetchBTCPriceHistory();
-    this.fetchGoogleTrends();
-    this.calculateSignal();
-  },
   methods: {
-    async fetchFearGreed() {
-      const idx = this.metrics.findIndex(m => m.key === 'fear_greed');
+    formatWaitTime(seconds) {
+      if (seconds < 60) {
+        return `${seconds} seconds`;
+      } else if (seconds < 3600) {
+        return `${Math.ceil(seconds / 60)} minutes`;
+      } else {
+        return `${Math.ceil(seconds / 3600)} hours`;
+      }
+    },
+    isRateLimitError(error) {
+      return error && (
+        error.includes('rate limited') ||
+        error.includes('429') ||
+        error.includes('Too Many Requests') ||
+        error.includes('FLOOD_WAIT')
+      )
+    },
+    isAuthError(error) {
+      return error.includes('401') || error.includes('Unauthorized');
+    },
+    isNotFoundError(error) {
+      return error.includes('404') || error.includes('Not Found');
+    },
+    getErrorMessage(error) {
+      if (this.isRateLimitError(error)) {
+        return 'API rate limit reached. Please try again in a few minutes.'
+      }
+      return error || 'An error occurred while fetching data'
+    },
+    async fetchMetric(key) {
+      console.log(`MarketAnalysis: fetchMetric(${key}) called`);
       try {
-        const res = await fetch('https://api.alternative.me/fng/?limit=5');
+        // Map of special endpoints that don't follow the standard pattern
+        const endpointMap = {
+          'fear-greed': '/api/fear-greed',
+          'btc-dominance': '/api/btc-dominance',
+          'market-cap': '/api/market-cap',
+          'eth-btc-ratio': '/api/eth-btc-ratio',
+          'altcoin-season': '/api/altcoin-season',
+          'volume-trend': '/api/volume-trend',
+          'bollinger-bands': '/api/bollinger-bands',
+          'ssr': '/api/ssr',
+          'exchange-flows': '/api/exchange-flows',
+          'active-addresses': '/api/active-addresses',
+          'whale-transactions': '/api/whale-transactions',
+          'funding-rate': '/api/funding-rate',
+          'open-interest': '/api/open-interest',
+          'ma-signal': '/api/moving-averages'
+        };
+
+        const endpoint = endpointMap[key] || `/api/${key}`;
+        console.log(`MarketAnalysis: Using endpoint ${endpoint} for ${key}`);
+        
+        const response = await fetch(`http://localhost:8080${endpoint}`);
+        console.log(`MarketAnalysis: fetchMetric(${key}) response received:`, response.status);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log(`MarketAnalysis: fetchMetric(${key}) data:`, data);
+        
+        const metricIndex = this.metrics.findIndex(m => m.key === key);
+        if (metricIndex === -1) {
+          console.error(`MarketAnalysis: Metric ${key} not found in metrics array`);
+          return;
+        }
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        // Special handling for SSR
+        if (key === 'ssr') {
+          const ssrValue = data.current_ssr;
+          this.metrics[metricIndex].value = (ssrValue * 100).toFixed(2) + '%';
+          this.metrics[metricIndex].chartData = data.historical.map(v => v * 100);
+          this.metrics[metricIndex].chartLabels = data.labels;
+          
+          // Set indicator based on SSR value
+          if (ssrValue < 0.5) {
+            this.metrics[metricIndex].indicator = 'Buy';
+            this.metrics[metricIndex].score = 1;
+          } else if (ssrValue > 2.0) {
+            this.metrics[metricIndex].indicator = 'Sell';
+            this.metrics[metricIndex].score = -1;
+          } else {
+            this.metrics[metricIndex].indicator = 'Hold';
+            this.metrics[metricIndex].score = 0;
+          }
+        } else {
+          // Handle other metrics as before
+          this.metrics[metricIndex].value = data.value;
+          this.metrics[metricIndex].indicator = data.indicator;
+          this.metrics[metricIndex].score = data.score;
+          this.metrics[metricIndex].chartData = data.chart_data || [];
+          this.metrics[metricIndex].chartLabels = data.chart_labels || [];
+        }
+        
+        this.metrics[metricIndex].error = false;
+        this.metrics[metricIndex].loading = false;
+        this.calculateSignal();
+      } catch (error) {
+        console.error(`Error fetching ${key}:`, error);
+        const metricIndex = this.metrics.findIndex(m => m.key === key);
+        if (metricIndex !== -1) {
+          this.metrics[metricIndex].error = true;
+          this.metrics[metricIndex].value = this.getErrorMessage(error.message);
+          this.metrics[metricIndex].loading = false;
+        }
+      }
+    },
+    async fetchExchangeFlows() {
+      const idx = this.metrics.findIndex(m => m.key === 'exchange-flows');
+      try {
+        const res = await fetch('/api/exchange-flows');
         const data = await res.json();
-        if (data && data.data && data.data.length > 0) {
-          const values = data.data.map(d => parseInt(d.value));
-          this.metrics[idx].value = values[0];
-          this.metrics[idx].chartData = values.reverse();
+        if (data.error) {
+          this.metrics[idx].error = true;
+          this.metrics[idx].value = this.getErrorMessage(data.error);
+          return;
+        }
+        if (data && data.netFlow !== undefined) {
+          this.metrics[idx].value = data.netFlow.toFixed(2);
+          this.metrics[idx].chartData = data.history || [];
           this.metrics[idx].chartLabels = ['5d', '4d', '3d', '2d', 'Now'];
-          // Scoring
-          if (values[0] < 30) {
+          if (data.netFlow < -1000) {
             this.metrics[idx].indicator = 'Buy';
             this.metrics[idx].score = 1;
-          } else if (values[0] > 70) {
+          } else if (data.netFlow > 1000) {
             this.metrics[idx].indicator = 'Sell';
             this.metrics[idx].score = -1;
           } else {
@@ -292,28 +421,34 @@ export default defineComponent({
           this.metrics[idx].error = false;
         } else {
           this.metrics[idx].error = true;
+          this.metrics[idx].value = 'RT';
         }
       } catch (e) {
         this.metrics[idx].error = true;
+        this.metrics[idx].value = this.getErrorMessage(e.message);
       } finally {
         this.metrics[idx].loading = false;
         this.calculateSignal();
       }
     },
-    async fetchBTCDominance() {
-      const idx = this.metrics.findIndex(m => m.key === 'btc_dominance');
+    async fetchVolumeTrend() {
+      const idx = this.metrics.findIndex(m => m.key === 'volume-trend');
       try {
-        const res = await fetch('http://localhost:5002/api/cmc/global');
+        const res = await fetch('/api/volume-trend');
         const data = await res.json();
-        if (data && data.data && data.data.btc_dominance) {
-          const value = data.data.btc_dominance;
-          this.metrics[idx].value = value.toFixed(2);
-          this.metrics[idx].chartData = [value, value, value, value, value];
+        if (data.error) {
+          this.metrics[idx].error = true;
+          this.metrics[idx].value = this.getErrorMessage(data.error);
+          return;
+        }
+        if (data && data.trend !== undefined) {
+          this.metrics[idx].value = data.trend;
+          this.metrics[idx].chartData = data.history || [0.5, 0.6, 0.7, 0.8, 1];
           this.metrics[idx].chartLabels = ['5d', '4d', '3d', '2d', 'Now'];
-          if (value < 50) {
+          if (data.trend === 'High Rising') {
             this.metrics[idx].indicator = 'Buy';
             this.metrics[idx].score = 1;
-          } else if (value > 60) {
+          } else if (data.trend === 'Low Falling') {
             this.metrics[idx].indicator = 'Sell';
             this.metrics[idx].score = -1;
           } else {
@@ -323,32 +458,34 @@ export default defineComponent({
           this.metrics[idx].error = false;
         } else {
           this.metrics[idx].error = true;
+          this.metrics[idx].value = 'RT';
         }
       } catch (e) {
         this.metrics[idx].error = true;
+        this.metrics[idx].value = this.getErrorMessage(e.message);
       } finally {
         this.metrics[idx].loading = false;
         this.calculateSignal();
       }
     },
-    async fetchSSR() {
-      const idx = this.metrics.findIndex(m => m.key === 'ssr');
+    async fetchBollingerBands() {
+      const idx = this.metrics.findIndex(m => m.key === 'bollinger-bands');
       try {
-        // Get BTC and stablecoin market caps from CoinGecko
-        const res = await fetch('https://api.coingecko.com/api/v3/global');
+        const res = await fetch('/api/bollinger-bands');
         const data = await res.json();
-        if (data && data.data && data.data.total_market_cap && data.data.total_market_cap.btc && data.data.total_market_cap.usdt) {
-          const btcCap = data.data.total_market_cap.btc;
-          const stableCap = data.data.total_market_cap.usdt + (data.data.total_market_cap.usdc || 0) + (data.data.total_market_cap.dai || 0);
-          const ssr = btcCap / stableCap;
-          this.metrics[idx].value = ssr.toFixed(2);
-          this.metrics[idx].chartData = [ssr, ssr, ssr, ssr, ssr];
+        if (data.error) {
+          this.metrics[idx].error = true;
+          this.metrics[idx].value = this.getErrorMessage(data.error);
+          return;
+        }
+        if (data && data.width !== undefined && data.bandwidth) {
+          this.metrics[idx].value = data.width.toFixed(4);
+          this.metrics[idx].chartData = data.bandwidth;
           this.metrics[idx].chartLabels = ['5d', '4d', '3d', '2d', 'Now'];
-          // Scoring (mock thresholds)
-          if (ssr < 0.6) {
+          if (data.width < 0.02) {
             this.metrics[idx].indicator = 'Buy';
             this.metrics[idx].score = 1;
-          } else if (ssr > 1.2) {
+          } else if (data.width > 0.04) {
             this.metrics[idx].indicator = 'Sell';
             this.metrics[idx].score = -1;
           } else {
@@ -358,198 +495,164 @@ export default defineComponent({
           this.metrics[idx].error = false;
         } else {
           this.metrics[idx].error = true;
+          this.metrics[idx].value = 'RT';
         }
       } catch (e) {
         this.metrics[idx].error = true;
+        this.metrics[idx].value = this.getErrorMessage(e.message);
       } finally {
         this.metrics[idx].loading = false;
         this.calculateSignal();
       }
     },
-    async fetchMarketCapChange() {
-      const idx = this.metrics.findIndex(m => m.key === 'market_cap');
+    async fetchRSI() {
       try {
-        const res = await fetch('https://api.coingecko.com/api/v3/global');
-        const data = await res.json();
-        if (data && data.data && data.data.total_market_cap && data.data.total_market_cap.usd && data.data.market_cap_change_percentage_24h_usd) {
-          const change = data.data.market_cap_change_percentage_24h_usd;
-          this.metrics[idx].value = change.toFixed(2);
-          this.metrics[idx].chartData = [change, change, change, change, change];
-          this.metrics[idx].chartLabels = ['5d', '4d', '3d', '2d', 'Now'];
-          if (change > 5) {
-            this.metrics[idx].indicator = 'Buy';
-            this.metrics[idx].score = 1;
-          } else if (change < -5) {
-            this.metrics[idx].indicator = 'Sell';
-            this.metrics[idx].score = -1;
-          } else {
-            this.metrics[idx].indicator = 'Hold';
-            this.metrics[idx].score = 0;
-          }
-          this.metrics[idx].error = false;
-        } else {
-          this.metrics[idx].error = true;
+        this.metrics.rsi.loading = true;
+        this.metrics.rsi.error = false;
+        
+        const response = await fetch('/api/rsi');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch RSI');
         }
-      } catch (e) {
-        this.metrics[idx].error = true;
-      } finally {
-        this.metrics[idx].loading = false;
-        this.calculateSignal();
+        
+        const data = await response.json();
+        
+        this.metrics.rsi = {
+          ...this.metrics.rsi,
+          value: data.value,
+          indicator: data.indicator,
+          score: data.score,
+          chartData: data.chart_data || [],
+          chartLabels: data.chart_labels || [],
+          loading: false,
+          error: false
+        };
+      } catch (error) {
+        console.error('Error fetching RSI:', error);
+        this.metrics.rsi = {
+          ...this.metrics.rsi,
+          value: null,
+          indicator: 'Hold',
+          score: 0,
+          chartData: [],
+          chartLabels: [],
+          loading: false,
+          error: true
+        };
       }
     },
-    async fetchETHBTCRatio() {
-      const idx = this.metrics.findIndex(m => m.key === 'eth_btc_ratio');
+    async fetchMovingAverages() {
       try {
-        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd');
-        const data = await res.json();
-        if (data && data.bitcoin && data.ethereum) {
-          const ratio = data.ethereum.usd / data.bitcoin.usd;
-          this.metrics[idx].value = ratio.toFixed(4);
-          this.metrics[idx].chartData = [ratio, ratio, ratio, ratio, ratio];
-          this.metrics[idx].chartLabels = ['5d', '4d', '3d', '2d', 'Now'];
-          if (ratio > 0.06) {
-            this.metrics[idx].indicator = 'Buy';
-            this.metrics[idx].score = 1;
-          } else if (ratio < 0.05) {
-            this.metrics[idx].indicator = 'Sell';
-            this.metrics[idx].score = -1;
-          } else {
-            this.metrics[idx].indicator = 'Hold';
-            this.metrics[idx].score = 0;
-          }
-          this.metrics[idx].error = false;
-        } else {
-          this.metrics[idx].error = true;
+        this.metrics.movingAverages.loading = true;
+        this.metrics.movingAverages.error = false;
+        
+        const response = await fetch('/api/moving-averages');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch moving averages');
         }
-      } catch (e) {
-        this.metrics[idx].error = true;
-      } finally {
-        this.metrics[idx].loading = false;
-        this.calculateSignal();
-      }
-    },
-    async fetchBTCPriceHistory() {
-      // For RSI, MA, Volume, Bollinger Bands
-      const rsiIdx = this.metrics.findIndex(m => m.key === 'rsi');
-      const maIdx = this.metrics.findIndex(m => m.key === 'ma_signal');
-      const volIdx = this.metrics.findIndex(m => m.key === 'volume');
-      const bollIdx = this.metrics.findIndex(m => m.key === 'bollinger');
-      try {
-        const res = await fetch('https://api.coingecko.com/api/v3/coins/bitcoin/ohlc?vs_currency=usd&days=7');
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          // data: [timestamp, open, high, low, close]
-          const closes = data.map(d => d[4]);
-          // RSI (14): use closes, simple calculation for demo
-          const rsi = closes.length > 14 ? (100 - (100 / (1 + (closes.slice(-15, -1).reduce((a, b) => a + b, 0) / closes.slice(-14).reduce((a, b) => a + b, 0))))) : 50;
-          this.metrics[rsiIdx].value = rsi.toFixed(2);
-          this.metrics[rsiIdx].chartData = closes.slice(-5);
-          this.metrics[rsiIdx].chartLabels = ['5d', '4d', '3d', '2d', 'Now'];
-          this.metrics[rsiIdx].indicator = rsi < 30 ? 'Buy' : rsi > 70 ? 'Sell' : 'Hold';
-          this.metrics[rsiIdx].score = rsi < 30 ? 1 : rsi > 70 ? -1 : 0;
-          this.metrics[rsiIdx].error = false;
-          // MA (simple 5/20 cross for demo)
-          const ma5 = closes.slice(-5).reduce((a, b) => a + b, 0) / 5;
-          const ma20 = closes.length >= 20 ? closes.slice(-20).reduce((a, b) => a + b, 0) / 20 : ma5;
-          this.metrics[maIdx].value = ma5 > ma20 ? 'Golden Cross' : 'Death Cross';
-          this.metrics[maIdx].chartData = closes.slice(-5);
-          this.metrics[maIdx].chartLabels = ['5d', '4d', '3d', '2d', 'Now'];
-          this.metrics[maIdx].indicator = ma5 > ma20 ? 'Buy' : ma5 < ma20 ? 'Sell' : 'Hold';
-          this.metrics[maIdx].score = ma5 > ma20 ? 1 : ma5 < ma20 ? -1 : 0;
-          this.metrics[maIdx].error = false;
-          // Volume (mock, as CoinGecko OHLC does not provide volume)
-          this.metrics[volIdx].value = 'High Rising';
-          this.metrics[volIdx].chartData = [1, 1, 1, 1, 1];
-          this.metrics[volIdx].chartLabels = ['5d', '4d', '3d', '2d', 'Now'];
-          this.metrics[volIdx].indicator = 'Buy';
-          this.metrics[volIdx].score = 1;
-          this.metrics[volIdx].error = false;
-          // Bollinger Bands (mock, as CoinGecko OHLC does not provide stddev)
-          this.metrics[bollIdx].value = 'N/A';
-          this.metrics[bollIdx].chartData = closes.slice(-5);
-          this.metrics[bollIdx].chartLabels = ['5d', '4d', '3d', '2d', 'Now'];
-          this.metrics[bollIdx].indicator = 'Hold';
-          this.metrics[bollIdx].score = 0;
-          this.metrics[bollIdx].error = false;
-        } else {
-          this.metrics[rsiIdx].error = true;
-          this.metrics[maIdx].error = true;
-          this.metrics[volIdx].error = true;
-          this.metrics[bollIdx].error = true;
-        }
-      } catch (e) {
-        this.metrics[rsiIdx].error = true;
-        this.metrics[maIdx].error = true;
-        this.metrics[volIdx].error = true;
-        this.metrics[bollIdx].error = true;
-      } finally {
-        this.calculateSignal();
-      }
-    },
-    async fetchGoogleTrends() {
-      const idx = this.metrics.findIndex(m => m.key === 'trends');
-      try {
-        const res = await fetch('http://localhost:5001/api/trends?keyword=bitcoin&timeframe=now 7-d');
-        const data = await res.json();
-        if (data && data.values && data.values.length > 0) {
-          this.metrics[idx].value = data.values[data.values.length - 1];
-          this.metrics[idx].chartData = data.values;
-          this.metrics[idx].chartLabels = data.labels;
-          // Scoring logic (example):
-          const val = data.values[data.values.length - 1];
-          if (val < 25) {
-            this.metrics[idx].indicator = 'Buy';
-            this.metrics[idx].score = 1;
-          } else if (val > 75) {
-            this.metrics[idx].indicator = 'Sell';
-            this.metrics[idx].score = -1;
-          } else {
-            this.metrics[idx].indicator = 'Hold';
-            this.metrics[idx].score = 0;
-          }
-          this.metrics[idx].error = false;
-        } else {
-          this.metrics[idx].error = true;
-        }
-      } catch (e) {
-        this.metrics[idx].error = true;
-      } finally {
-        this.metrics[idx].loading = false;
-        this.calculateSignal();
+        
+        const data = await response.json();
+        
+        this.metrics.movingAverages = {
+          ...this.metrics.movingAverages,
+          value: data.value,
+          indicator: data.indicator,
+          score: data.score,
+          chartData: data.chart_data || [],
+          chartLabels: data.chart_labels || [],
+          loading: false,
+          error: false
+        };
+      } catch (error) {
+        console.error('Error fetching moving averages:', error);
+        this.metrics.movingAverages = {
+          ...this.metrics.movingAverages,
+          value: null,
+          indicator: 'Hold',
+          score: 0,
+          chartData: [],
+          chartLabels: [],
+          loading: false,
+          error: true
+        };
       }
     },
     calculateSignal() {
-      // If any critical metric is missing, set error
+      console.log('[calculateSignal] Starting signal calculation')
       const criticalKeys = [
-        'fear_greed', 'altcoin_index', 'btc_dominance', 'ssr', 'rsi', 'market_cap', 'ma_signal', 'volume'
+        'fear-greed', 'altcoin-season', 'btc-dominance', 'ssr', 'rsi', 'market-cap', 'ma-signal', 'volume-trend'
       ];
       let error = null;
       for (const key of criticalKeys) {
         const m = this.metrics.find(m => m.key === key);
         if (!m || m.error) {
+          console.log(`[calculateSignal] Critical metric ${key} is unavailable or has error`)
           error = 'One or more critical metrics are unavailable. Algorithmic signal may be inaccurate.';
           break;
         }
       }
       this.error = error;
-      // Calculate weighted score
-      const totalScore = error
-        ? 0
-        : this.metrics.reduce((sum, m) => sum + m.score * m.weight, 0);
+
+      let totalWeight = 0;
+      let weightedScore = 0;
+      
+      for (const m of this.metrics) {
+        if (!m.error) {
+          weightedScore += m.score * m.weight;
+          totalWeight += m.weight;
+        }
+      }
+
+      const totalScore = totalWeight > 0 ? weightedScore / totalWeight : 0;
+      console.log(`[calculateSignal] Calculated total score: ${totalScore}`)
+      
       let signal = 'Hold';
       let asset = null;
-      if (!error) {
+      
+      if (!error && totalWeight > 0) {
         if (totalScore > 0.5) {
           signal = 'Buy';
-          asset = this.metrics.find(m => m.key === 'altcoin_index').value > 75 ? 'Altcoins' : 'Bitcoin';
+          const altcoinMetric = this.metrics.find(m => m.key === 'altcoin-season');
+          asset = altcoinMetric && !altcoinMetric.error && altcoinMetric.value > 75 ? 'Altcoins' : 'Bitcoin';
         } else if (totalScore < -0.5) {
           signal = 'Sell';
           asset = 'All';
         }
       }
+
+      console.log(`[calculateSignal] Final signal: ${signal}, asset: ${asset}`)
       this.totalScore = totalScore;
       this.signal = signal;
       this.asset = asset;
+    },
+    async fetchAllMetrics() {
+      console.log('MarketAnalysis: fetchAllMetrics() called');
+      try {
+        const promises = this.metrics.map(metric => this.fetchMetric(metric.key));
+        await Promise.all(promises);
+        console.log('MarketAnalysis: All metrics fetched successfully');
+      } catch (error) {
+        console.error('MarketAnalysis: Error fetching metrics:', error);
+        this.error = 'Failed to fetch market data';
+      }
+    },
+    mounted() {
+      console.log('[mounted] MarketAnalysis component mounted')
+      console.log('[mounted] Initial metrics state:', this.metrics.map(m => ({ 
+        key: m.key, 
+        value: m.value,
+        loading: m.loading,
+        error: m.error 
+      })))
+      this.fetchAllMetrics()
+      // Refresh data every 5 minutes
+      console.log('[mounted] Setting up refresh interval')
+      setInterval(() => {
+        console.log('[refresh] Starting scheduled refresh...')
+        this.fetchAllMetrics()
+      }, 5 * 60 * 1000)
     }
   }
 });

@@ -3,6 +3,7 @@ package telegram
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -19,7 +20,21 @@ import (
 	"github.com/gotd/td/tg"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/crypto/pbkdf2"
 )
+
+// Add these constants at the top of the file
+const (
+	minPasswordAttemptInterval = 30 * time.Second
+	maxPasswordAttempts        = 5
+	passwordAttemptWindow      = 24 * time.Hour
+)
+
+// Add this struct to track password attempts
+type PasswordAttempt struct {
+	Timestamp time.Time
+	Success   bool
+}
 
 // Reinstated AuthSession and sessions map
 type AuthSession struct {
@@ -29,6 +44,7 @@ type AuthSession struct {
 	PhoneNumber         string
 	CreatedAt           time.Time
 	PhoneCodeHash       string
+	PasswordAttempts    []PasswordAttempt // Track password attempts
 }
 
 type TelegramService struct {
@@ -310,15 +326,13 @@ func (s *TelegramService) formatError(err error) error {
 			if len(parts) > 1 {
 				seconds := parts[1]
 				if secs, err := strconv.Atoi(seconds); err == nil {
-					minutes := secs / 60
-					remainingSecs := secs % 60
-					waitTime = fmt.Sprintf("%d minutes and %d seconds", minutes, remainingSecs)
+					waitTime = formatWaitTime(secs)
 				} else {
 					waitTime = seconds
 				}
 			}
 		}
-		return fmt.Errorf("too many failed attempts. Please wait %s before trying again. This is a security measure to protect your account", waitTime)
+		return fmt.Errorf("too many attempts. Please wait %s before trying again. This is a security measure to protect your account", waitTime)
 	case strings.Contains(errStr, "FLOOD_WAIT"):
 		waitTime := "24 hours"
 		if strings.Contains(errStr, "FLOOD_WAIT_") {
@@ -326,9 +340,7 @@ func (s *TelegramService) formatError(err error) error {
 			if len(parts) > 1 {
 				seconds := parts[1]
 				if secs, err := strconv.Atoi(seconds); err == nil {
-					minutes := secs / 60
-					remainingSecs := secs % 60
-					waitTime = fmt.Sprintf("%d minutes and %d seconds", minutes, remainingSecs)
+					waitTime = formatWaitTime(secs)
 				} else {
 					waitTime = seconds
 				}
@@ -353,6 +365,27 @@ func (s *TelegramService) formatError(err error) error {
 		return fmt.Errorf("incorrect 2FA password. Please check your password and try again. If you've forgotten your password, you can reset it in the official Telegram app")
 	default:
 		return fmt.Errorf("authentication failed: %v", err)
+	}
+}
+
+// Helper function to format wait time
+func formatWaitTime(seconds int) string {
+	if seconds < 60 {
+		return fmt.Sprintf("%d seconds", seconds)
+	} else if seconds < 3600 {
+		minutes := seconds / 60
+		remainingSecs := seconds % 60
+		if remainingSecs == 0 {
+			return fmt.Sprintf("%d minutes", minutes)
+		}
+		return fmt.Sprintf("%d minutes and %d seconds", minutes, remainingSecs)
+	} else {
+		hours := seconds / 3600
+		minutes := (seconds % 3600) / 60
+		if minutes == 0 {
+			return fmt.Sprintf("%d hours", hours)
+		}
+		return fmt.Sprintf("%d hours and %d minutes", hours, minutes)
 	}
 }
 
@@ -501,6 +534,19 @@ func (s *TelegramService) AuthenticateUser(phoneNumber string) error {
 		s.logger.Error("Failed to send code",
 			zap.String("phone", phoneNumber),
 			zap.Error(err))
+
+		// Handle flood wait error
+		if strings.Contains(err.Error(), "FLOOD_WAIT_") {
+			parts := strings.Split(err.Error(), "FLOOD_WAIT_")
+			if len(parts) > 1 {
+				seconds := parts[1]
+				if secs, err := strconv.Atoi(seconds); err == nil {
+					waitTime := formatWaitTime(secs)
+					return fmt.Errorf("too many attempts. Please wait %s before trying again", waitTime)
+				}
+			}
+			return fmt.Errorf("too many attempts. Please wait before trying again")
+		}
 
 		// If we get AUTH_RESTART, try to clear the session file and retry once
 		if strings.Contains(err.Error(), "AUTH_RESTART") {
@@ -674,16 +720,53 @@ func (s *TelegramService) Verify2FA(phoneForVerify, password string) error {
 		return fmt.Errorf("no session for phone number %s", phoneForVerify)
 	}
 
-	if !sess.LastPasswordAttempt.IsZero() {
-		timeSinceLastAttempt := time.Since(sess.LastPasswordAttempt)
-		if timeSinceLastAttempt < 30*time.Second {
-			waitTime := 30*time.Second - timeSinceLastAttempt
-			s.mu.Unlock()
-			s.logger.Info("Rate limiting password attempt for phone", zap.String("phone", phoneForVerify))
-			return fmt.Errorf("please wait %v before trying again", waitTime.Round(time.Second))
+	// Initialize password attempts if not exists
+	if sess.PasswordAttempts == nil {
+		sess.PasswordAttempts = make([]PasswordAttempt, 0)
+	}
+
+	// Clean up old attempts
+	now := time.Now()
+	validAttempts := make([]PasswordAttempt, 0)
+	for _, attempt := range sess.PasswordAttempts {
+		if now.Sub(attempt.Timestamp) <= passwordAttemptWindow {
+			validAttempts = append(validAttempts, attempt)
 		}
 	}
-	sess.LastPasswordAttempt = time.Now()
+	sess.PasswordAttempts = validAttempts
+
+	// Check if we're rate limited
+	if !sess.LastPasswordAttempt.IsZero() {
+		timeSinceLastAttempt := time.Since(sess.LastPasswordAttempt)
+		if timeSinceLastAttempt < minPasswordAttemptInterval {
+			waitTime := minPasswordAttemptInterval - timeSinceLastAttempt
+			s.mu.Unlock()
+			s.logger.Info("Rate limiting password attempt for phone",
+				zap.String("phone", phoneForVerify),
+				zap.Duration("wait_time", waitTime),
+			)
+			return fmt.Errorf("please wait %s before trying again", formatWaitTime(int(waitTime.Seconds())))
+		}
+	}
+
+	// Check if we've exceeded the maximum number of attempts
+	if len(sess.PasswordAttempts) >= maxPasswordAttempts {
+		oldestAttempt := sess.PasswordAttempts[0].Timestamp
+		timeUntilReset := passwordAttemptWindow - now.Sub(oldestAttempt)
+		s.mu.Unlock()
+		s.logger.Info("Maximum password attempts reached for phone",
+			zap.String("phone", phoneForVerify),
+			zap.Duration("time_until_reset", timeUntilReset),
+		)
+		return fmt.Errorf("too many failed attempts. Please wait %s before trying again", formatWaitTime(int(timeUntilReset.Seconds())))
+	}
+
+	// Update last attempt time and add new attempt
+	sess.LastPasswordAttempt = now
+	sess.PasswordAttempts = append(sess.PasswordAttempts, PasswordAttempt{
+		Timestamp: now,
+		Success:   false, // Will be updated if successful
+	})
 	s.mu.Unlock()
 
 	select {
@@ -709,6 +792,11 @@ func (s *TelegramService) Verify2FA(phoneForVerify, password string) error {
 			return
 		}
 
+		s.logger.Info("Got password settings",
+			zap.Int64("srpID", passwordSettings.SRPID),
+			zap.String("srpB", hex.EncodeToString(passwordSettings.SRPB)),
+		)
+
 		// Type assert the password algorithm
 		algo, ok := passwordSettings.CurrentAlgo.(*tg.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow)
 		if !ok {
@@ -716,6 +804,11 @@ func (s *TelegramService) Verify2FA(phoneForVerify, password string) error {
 			done <- fmt.Errorf("unexpected password algorithm type")
 			return
 		}
+
+		s.logger.Info("Current algorithm parameters",
+			zap.String("salt1", hex.EncodeToString(algo.Salt1)),
+			zap.String("salt2", hex.EncodeToString(algo.Salt2)),
+		)
 
 		// Type assert the new algorithm
 		newAlgo, ok := passwordSettings.NewAlgo.(*tg.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow)
@@ -725,11 +818,9 @@ func (s *TelegramService) Verify2FA(phoneForVerify, password string) error {
 			return
 		}
 
-		// Calculate password hash
-		passwordHash := s.calculatePasswordHash(
-			algo.Salt1,
-			[]byte(password),
-			algo.Salt2,
+		s.logger.Info("New algorithm parameters",
+			zap.String("p", hex.EncodeToString(newAlgo.P)),
+			zap.Int("g", newAlgo.G),
 		)
 
 		// Convert SRP parameters
@@ -737,13 +828,82 @@ func (s *TelegramService) Verify2FA(phoneForVerify, password string) error {
 		g := big.NewInt(int64(newAlgo.G))
 		srpB := new(big.Int).SetBytes(passwordSettings.SRPB)
 
-		// Calculate M1
-		m1 := s.calculateM1(p, g, algo.Salt1, srpB, srpB, passwordHash)
+		// Calculate x = PH2(password, salt1, salt2)
+		x := s.calculatePH2([]byte(password), algo.Salt1, algo.Salt2)
+		s.logger.Info("Calculated x",
+			zap.String("x", x.Text(16)),
+		)
+
+		// Calculate v = pow(g, x) mod p
+		v := new(big.Int).Exp(g, x, p)
+		s.logger.Info("Calculated v",
+			zap.String("v", v.Text(16)),
+		)
+
+		// Calculate k = H(p | g)
+		k := s.calculateK(p, g)
+		s.logger.Info("Calculated k",
+			zap.String("k", k.Text(16)),
+		)
+
+		// Calculate k_v = (k * v) mod p
+		kv := new(big.Int).Mul(k, v)
+		kv.Mod(kv, p)
+		s.logger.Info("Calculated k_v",
+			zap.String("k_v", kv.Text(16)),
+		)
+
+		// Generate client's private key (a)
+		a := new(big.Int).SetBytes(s.calculatePH2([]byte(password), algo.Salt1, algo.Salt2).Bytes())
+		s.logger.Info("Generated client private key",
+			zap.String("a", a.Text(16)),
+		)
+
+		// Calculate client's public key (A = g^a mod p)
+		A := new(big.Int).Exp(g, a, p)
+		s.logger.Info("Calculated client public key",
+			zap.String("A", A.Text(16)),
+		)
+
+		// Calculate u = H(A | B)
+		u := s.calculateU(A, srpB)
+		s.logger.Info("Calculated u",
+			zap.String("u", u.Text(16)),
+		)
+
+		// Calculate t = (g_b - k_v) mod p
+		t := new(big.Int).Sub(srpB, kv)
+		t.Mod(t, p)
+		s.logger.Info("Calculated t",
+			zap.String("t", t.Text(16)),
+		)
+
+		// Calculate s_a = pow(t, a + u * x) mod p
+		ux := new(big.Int).Mul(u, x)
+		aux := new(big.Int).Add(a, ux)
+		s_a := new(big.Int).Exp(t, aux, p)
+		s.logger.Info("Calculated s_a",
+			zap.String("s_a", s_a.Text(16)),
+		)
+
+		// Calculate k_a = H(s_a)
+		h := sha256.New()
+		h.Write(s_a.Bytes())
+		k_a := h.Sum(nil)
+		s.logger.Info("Calculated k_a",
+			zap.String("k_a", hex.EncodeToString(k_a)),
+		)
+
+		// Calculate M1 = H(H(p) xor H(g) | H(salt1) | H(salt2) | g_a | g_b | k_a)
+		m1 := s.calculateM1(p, g, algo.Salt1, algo.Salt2, A, srpB, k_a)
+		s.logger.Info("Calculated M1",
+			zap.String("m1", hex.EncodeToString(m1)),
+		)
 
 		// Sign in with 2FA
 		_, err = api.AuthCheckPassword(ctx, &tg.InputCheckPasswordSRP{
 			SRPID: passwordSettings.SRPID,
-			A:     passwordSettings.SRPB,
+			A:     A.Bytes(),
 			M1:    m1,
 		})
 		if err != nil {
@@ -758,6 +918,12 @@ func (s *TelegramService) Verify2FA(phoneForVerify, password string) error {
 
 	select {
 	case err := <-done:
+		// If successful, update the last attempt to success
+		s.mu.Lock()
+		if len(sess.PasswordAttempts) > 0 {
+			sess.PasswordAttempts[len(sess.PasswordAttempts)-1].Success = true
+		}
+		s.mu.Unlock()
 		return err
 	case <-ctx.Done():
 		return fmt.Errorf("2FA verification timed out")
@@ -816,85 +982,139 @@ func (s *TelegramService) ResendCode(phoneForResend string) error {
 	})
 }
 
-//SRP calculation helpers (calculatePasswordHash, calculateK, calculateU, calculateM1) remain the same.
-
-// SRP calculation helpers (calculatePasswordHash, calculateK, calculateU, calculateM1) remain the same.
-func (s *TelegramService) calculatePasswordHash(salt1, password, salt2 []byte) *big.Int {
-	// First hash: H(salt1 + password + salt2)
-	h1 := sha256.New()
-	h1.Write(salt1)
-	h1.Write(password)
-	h1.Write(salt2)
-	hash1 := h1.Sum(nil)
-
-	// Second hash: H(hash1)
-	h2 := sha256.New()
-	h2.Write(hash1)
-	hash2 := h2.Sum(nil)
-
-	s.logger.Debug("Password hash calculation",
-		zap.Int("salt1Length", len(salt1)),
-		zap.Int("passwordLength", len(password)),
-		zap.Int("salt2Length", len(salt2)),
-		zap.Int("hash1Length", len(hash1)),
-		zap.Int("hash2Length", len(hash2)),
-		zap.String("salt1Hex", hex.EncodeToString(salt1)),
-		zap.String("passwordHex", hex.EncodeToString(password)),
-		zap.String("salt2Hex", hex.EncodeToString(salt2)),
-		zap.String("hash1Hex", hex.EncodeToString(hash1)),
-		zap.String("hash2Hex", hex.EncodeToString(hash2)),
-		zap.String("rawPassword", string(password)),
-		zap.Any("passwordBytes", password),
+// SRP calculation helpers
+func (s *TelegramService) calculatePH1(password, salt1, salt2 []byte) []byte {
+	// SH(SH(password, salt1), salt2)
+	h := sha256.New()
+	h.Write(salt1)
+	h.Write(password)
+	h.Write(salt1)
+	hash1 := h.Sum(nil)
+	s.logger.Info("PH1 intermediate hash1",
+		zap.String("hash1", hex.EncodeToString(hash1)),
 	)
 
-	return new(big.Int).SetBytes(hash2)
+	h.Reset()
+	h.Write(salt2)
+	h.Write(hash1)
+	h.Write(salt2)
+	result := h.Sum(nil)
+	s.logger.Info("PH1 final result",
+		zap.String("result", hex.EncodeToString(result)),
+	)
+	return result
+}
+
+func (s *TelegramService) calculatePH2(password, salt1, salt2 []byte) *big.Int {
+	// SH(pbkdf2(sha512, PH1(password, salt1, salt2), salt1, 100000), salt2)
+	ph1 := s.calculatePH1(password, salt1, salt2)
+	s.logger.Info("PH2 PH1 result",
+		zap.String("ph1", hex.EncodeToString(ph1)),
+	)
+
+	// PBKDF2 with SHA512, 100000 iterations
+	key := pbkdf2.Key(ph1, salt1, 100000, 64, sha512.New)
+	s.logger.Info("PH2 PBKDF2 result",
+		zap.String("key", hex.EncodeToString(key)),
+	)
+
+	// Final SH
+	h := sha256.New()
+	h.Write(salt2)
+	h.Write(key)
+	h.Write(salt2)
+	result := h.Sum(nil)
+	s.logger.Info("PH2 final result",
+		zap.String("result", hex.EncodeToString(result)),
+	)
+	return new(big.Int).SetBytes(result)
 }
 
 func (s *TelegramService) calculateK(p, g *big.Int) *big.Int {
+	// k = H(p | g)
 	h := sha256.New()
 	h.Write(p.Bytes())
 	h.Write(g.Bytes())
-	return new(big.Int).SetBytes(h.Sum(nil))
+	result := h.Sum(nil)
+	s.logger.Info("K calculation",
+		zap.String("p", hex.EncodeToString(p.Bytes())),
+		zap.String("g", hex.EncodeToString(g.Bytes())),
+		zap.String("result", hex.EncodeToString(result)),
+	)
+	return new(big.Int).SetBytes(result)
 }
 
 func (s *TelegramService) calculateU(A, B *big.Int) *big.Int {
+	// u = H(g_a | g_b)
 	h := sha256.New()
 	h.Write(A.Bytes())
 	h.Write(B.Bytes())
-	return new(big.Int).SetBytes(h.Sum(nil))
+	result := h.Sum(nil)
+	s.logger.Info("U calculation",
+		zap.String("A", hex.EncodeToString(A.Bytes())),
+		zap.String("B", hex.EncodeToString(B.Bytes())),
+		zap.String("result", hex.EncodeToString(result)),
+	)
+	return new(big.Int).SetBytes(result)
 }
 
-func (s *TelegramService) calculateM1(p, g *big.Int, salt1 []byte, A, B, S *big.Int) []byte {
+func (s *TelegramService) calculateM1(p, g *big.Int, salt1, salt2 []byte, A, B *big.Int, k_a []byte) []byte {
+	// M1 = H(H(p) xor H(g) | H(salt1) | H(salt2) | g_a | g_b | k_a)
+
 	// Calculate H(p)
 	h := sha256.New()
 	h.Write(p.Bytes())
 	hp := h.Sum(nil)
+	s.logger.Info("M1 H(p)",
+		zap.String("hp", hex.EncodeToString(hp)),
+	)
 
 	// Calculate H(g)
 	h.Reset()
 	h.Write(g.Bytes())
 	hg := h.Sum(nil)
+	s.logger.Info("M1 H(g)",
+		zap.String("hg", hex.EncodeToString(hg)),
+	)
 
 	// Calculate H(p) xor H(g)
-	ngxor := make([]byte, len(hp))
+	pxorg := make([]byte, len(hp))
 	for i := range hp {
-		ngxor[i] = hp[i] ^ hg[i]
+		pxorg[i] = hp[i] ^ hg[i]
 	}
+	s.logger.Info("M1 H(p) xor H(g)",
+		zap.String("pxorg", hex.EncodeToString(pxorg)),
+	)
 
 	// Calculate H(salt1)
 	h.Reset()
 	h.Write(salt1)
 	hsalt1 := h.Sum(nil)
+	s.logger.Info("M1 H(salt1)",
+		zap.String("hsalt1", hex.EncodeToString(hsalt1)),
+	)
+
+	// Calculate H(salt2)
+	h.Reset()
+	h.Write(salt2)
+	hsalt2 := h.Sum(nil)
+	s.logger.Info("M1 H(salt2)",
+		zap.String("hsalt2", hex.EncodeToString(hsalt2)),
+	)
 
 	// Calculate final M1
 	h.Reset()
-	h.Write(ngxor)
+	h.Write(pxorg)
 	h.Write(hsalt1)
+	h.Write(hsalt2)
 	h.Write(A.Bytes())
 	h.Write(B.Bytes())
-	h.Write(S.Bytes())
-
-	return h.Sum(nil)
+	h.Write(k_a)
+	result := h.Sum(nil)
+	s.logger.Info("M1 final result",
+		zap.String("result", hex.EncodeToString(result)),
+	)
+	return result
 }
 
 func (s *TelegramService) GenerateAuthLink() string {
@@ -969,4 +1189,24 @@ func (s *TelegramService) GetCurrentUser() (map[string]interface{}, error) {
 	}
 
 	return user, nil
+}
+
+func (s *TelegramService) GetStatus() map[string]interface{} {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	status := map[string]interface{}{
+		"authenticated": s.userAuth,
+		"user_id":       s.userID,
+	}
+
+	if s.userAuth {
+		// Try to get current user info if authenticated
+		user, err := s.GetCurrentUser()
+		if err == nil {
+			status["user"] = user
+		}
+	}
+
+	return status
 }
