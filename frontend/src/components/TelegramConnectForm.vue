@@ -151,22 +151,29 @@ export default {
           throw new Error('Please enter a valid phone number')
         }
 
+        console.log('Sending phone number:', '+' + this.phone)
         const response = await fetch(`http://localhost:8080/api/telegram/auth/callback?phone=${encodeURIComponent('+' + this.phone)}`)
+        console.log('Response status:', response.status)
+        const data = await response.json()
+        console.log('Response data:', data)
+        
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to start authentication')
+          console.error('Response not OK:', data)
+          throw new Error(data.error || 'Failed to start authentication')
         }
 
-        const data = await response.json()
-        this.hash = data.hash
-        if (!this.hash) {
+        if (!data.success || !data.hash) {
+          console.error('Missing success or hash:', data)
           throw new Error('Failed to get phone code hash')
         }
 
+        console.log('Setting hash:', data.hash)
+        this.hash = data.hash
         this.showVerification = true
         this.startCountdown()
         this.retryCount = 0
       } catch (err) {
+        console.error('Error in handlePhoneSubmit:', err)
         this.phoneError = err.message
         this.generalError = 'Failed to send verification code. Please try again.'
       } finally {

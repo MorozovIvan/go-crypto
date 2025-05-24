@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/big"
@@ -18,7 +19,6 @@ import (
 
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -111,7 +111,7 @@ func handleTelegramAuthCallback(c *gin.Context) {
 	}
 
 	// Get the phone code hash
-	hash := telegramService.GetPhoneCodeHash()
+	hash := telegramService.GetPhoneCodeHash(phone)
 	if hash == "" {
 		log.Printf("Failed to get phone code hash")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get phone code hash"})
@@ -119,12 +119,15 @@ func handleTelegramAuthCallback(c *gin.Context) {
 	}
 
 	log.Printf("Successfully sent verification code to %s", phone)
+	log.Printf("Generated hash for phone %s: %s", phone, hash)
 
 	// Return the phone code hash along with success response
-	c.JSON(http.StatusOK, gin.H{
+	response := gin.H{
 		"success": true,
 		"hash":    hash,
-	})
+	}
+	log.Printf("Sending response: %+v", response)
+	c.JSON(http.StatusOK, response)
 }
 
 func handleTelegramPhone(c *gin.Context) {
@@ -169,13 +172,8 @@ func handleTelegramVerifyCode(c *gin.Context) {
 		return
 	}
 
-	// Set the phone, code, and hash
-	telegramService.SetPhone(data.Phone)
-	telegramService.SetCode(data.Code)
-	telegramService.SetHash(data.Hash)
-
 	// First try to verify the code
-	err := telegramService.VerifyCode(data.Code)
+	err := telegramService.VerifyCode(data.Phone, data.Code)
 	if err != nil {
 		log.Printf("Code verification result: %v", err)
 
@@ -191,7 +189,7 @@ func handleTelegramVerifyCode(c *gin.Context) {
 			}
 
 			// Try to verify 2FA
-			err = telegramService.Verify2FA(data.Password)
+			err = telegramService.Verify2FA(data.Phone, data.Password)
 			if err != nil {
 				log.Printf("2FA verification failed: %v", err)
 				c.JSON(http.StatusUnauthorized, gin.H{
@@ -240,6 +238,7 @@ func handleTelegramVerifyCode(c *gin.Context) {
 
 func handleTelegramVerify2FA(c *gin.Context) {
 	var data struct {
+		Phone    string `json:"phone"`
 		Password string `json:"password"`
 	}
 
@@ -252,7 +251,7 @@ func handleTelegramVerify2FA(c *gin.Context) {
 	log.Printf("Received 2FA verification request")
 
 	// Try to verify 2FA
-	err := telegramService.Verify2FA(data.Password)
+	err := telegramService.Verify2FA(data.Phone, data.Password)
 	if err != nil {
 		log.Printf("2FA verification failed: %v", err)
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -327,10 +326,10 @@ func handleGetCurrentUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":         user.ID,
-		"username":   user.Username,
-		"first_name": user.FirstName,
-		"last_name":  user.LastName,
+		"id":         user["id"],
+		"username":   user["username"],
+		"first_name": user["first_name"],
+		"last_name":  user["last_name"],
 	})
 }
 
@@ -359,20 +358,52 @@ func handleTelegramStatus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func handleCMCGlobal(c *gin.Context) {
+	apiKey := os.Getenv("VITE_CMC_API_KEY")
+	if apiKey == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "API key not set"})
+		return
+	}
+
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "https://pro-api.coinmarketcap.com/v1/global-metrics/quotes/latest", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request"})
+		return
+	}
+
+	req.Header.Set("X-CMC_PRO_API_KEY", apiKey)
+	resp, err := client.Do(req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to fetch from CoinMarketCap"})
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response"})
+		return
+	}
+
+	c.Header("Content-Type", "application/json")
+	c.Data(resp.StatusCode, "application/json", body)
+}
+
 func main() {
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Printf("No .env file found or error loading .env: %v", err)
+	}
+
 	// Set up logging to file
-	logFile, logErr := os.OpenFile("telegram.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if logErr != nil {
-		log.Fatalf("Failed to open log file: %v", logErr)
+	logFile, err := os.OpenFile("telegram.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("Failed to open log file: %v", err)
 	}
 	defer logFile.Close()
 	log.SetOutput(logFile)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
-
-	// Load .env file
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: Error loading .env file: %v", err)
-	}
 
 	// Load configuration
 	if err := config.LoadConfig(); err != nil {
@@ -380,7 +411,6 @@ func main() {
 	}
 
 	// Initialize Telegram service
-	var err error
 	telegramService, err = telegram.NewTelegramService()
 	if err != nil {
 		log.Fatalf("Failed to initialize Telegram service: %v", err)
@@ -389,20 +419,24 @@ func main() {
 	// Initialize Gin router
 	router := gin.Default()
 
-	// Configure CORS
-	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:           12 * 60 * 60, // 12 hours
-	}))
+	// Add CORS middleware
+	router.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	})
 
 	// API routes
 	api := router.Group("/api")
 	{
-		// Add balance endpoint
 		api.GET("/balance", func(c *gin.Context) {
 			walletAddress := config.GlobalConfig.WalletAddress
 			balance, err := getBalance(walletAddress)
@@ -420,6 +454,9 @@ func main() {
 		api.GET("/telegram/groups", handleGetGroups)
 		api.GET("/telegram/phone", handleTelegramPhone)
 		api.GET("/telegram/user", handleGetCurrentUser)
+
+		// CMC endpoints
+		api.GET("/cmc/global", handleCMCGlobal)
 	}
 
 	// Start server
