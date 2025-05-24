@@ -12,7 +12,7 @@
             :is-connected="isConnected"
             :user-id="userId"
             @connect="handleConnect"
-            @2fa-required="show2FAModal = true"
+            @2fa-required="handle2FARequired"
           />
         </div>
         <div v-else-if="currentView === 'market'">
@@ -84,7 +84,8 @@ export default {
       show2FAModal: false,
       twoFACode: '',
       currentView: 'telegram',
-      walletAddress: null
+      walletAddress: null,
+      currentPhone: '',
     }
   },
   methods: {
@@ -93,9 +94,39 @@ export default {
       this.userId = userId
     },
     handle2FASubmit() {
-      // Handle 2FA submission
-      this.show2FAModal = false
-      this.twoFACode = ''
+      if (!this.twoFACode) {
+        return;
+      }
+
+      fetch(`${API_BASE_URL}/api/telegram/auth/verify2fa`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: this.currentPhone,
+          password: this.twoFACode,
+        }),
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            this.isConnected = true;
+            this.userId = data.user_id;
+            this.show2FAModal = false;
+            this.twoFACode = '';
+          } else {
+            alert(data.message || '2FA verification failed');
+          }
+        })
+        .catch(error => {
+          console.error('2FA verification error:', error);
+          alert('Failed to verify 2FA code. Please try again.');
+        });
+    },
+    handle2FARequired(phone) {
+      this.currentPhone = phone;
+      this.show2FAModal = true;
     },
     handleViewChange(view) {
       this.currentView = view

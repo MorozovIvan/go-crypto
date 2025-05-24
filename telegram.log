@@ -20,3 +20,40 @@
 2025/05/24 09:53:45.885766 Raw request body: {"phone":"+380500232802","code":"57926","hash":"98937d24cc83a60fab"}
 2025/05/24 09:53:45.887756 Received verification request - Phone: +380500232802, Code: 57926, Hash: 98937d24cc83a60fab, Has Password: false
 2025/05/24 09:53:45.932654 Code verification result: SESSION_PASSWORD_NEEDED
+2025/05/24 10:01:27.079198 Server starting on port 8080
+2025/05/24 10:01:37.282132 Received authentication request for phone: +380500232802
+2025/05/24 10:01:37.329998 Authentication failed: failed to send code: rpcDoRequest: rpc error code 500: AUTH_RESTART
+2025/05/24 10:02:28.272411 Server starting on port 8080
+2025/05/24 10:02:37.932214 Received authentication request for phone: +380500232802
+2025/05/24 10:02:38.044827 Successfully sent verification code to +380500232802
+2025/05/24 10:02:38.044844 Generated hash for phone +380500232802: 6a6a08c7e98f2dba66
+2025/05/24 10:02:38.044854 Sending response: map[hash:6a6a08c7e98f2dba66 success:true]
+2025/05/24 10:02:43.483949 Raw request body: {"phone":"+380500232802","code":"87972","hash":"6a6a08c7e98f2dba66"}
+2025/05/24 10:02:43.484194 Received verification request - Phone: +380500232802, Code: 87972, Hash: 6a6a08c7e98f2dba66, Has Password: false
+2025/05/24 10:02:43.531796 Code verification result: SESSION_PASSWORD_NEEDED
+2025/05/24 16:32:15.605205 Received authentication request for phone: +380500232802
+2025/05/24 16:32:15.742417 Successfully sent verification code to +380500232802
+2025/05/24 16:32:15.742442 Generated hash for phone +380500232802: 3ab53c85e4b7150268
+2025/05/24 16:32:15.742463 Sending response: map[hash:3ab53c85e4b7150268 success:true]
+2025/05/24 16:32:26.512537 Raw request body: {"phone":"+380500232802","code":"95389","hash":"3ab53c85e4b7150268"}
+2025/05/24 16:32:26.513040 Received verification request - Phone: +380500232802, Code: 95389, Hash: 3ab53c85e4b7150268, Has Password: false
+2025/05/24 16:32:26.569633 Code verification result: SESSION_PASSWORD_NEEDED
+2025/05/24 16:33:14.262031 Received authentication request for phone: +380500232802
+2025/05/24 16:33:14.552402 Successfully sent verification code to +380500232802
+2025/05/24 16:33:14.552448 Generated hash for phone +380500232802: f5dfefd9a01309a556
+2025/05/24 16:33:14.552485 Sending response: map[hash:f5dfefd9a01309a556 success:true]
+2025/05/24 16:33:18.617296 Raw request body: {"phone":"+380500232802","code":"47490","hash":"f5dfefd9a01309a556"}
+2025/05/24 16:33:18.617543 Received verification request - Phone: +380500232802, Code: 47490, Hash: f5dfefd9a01309a556, Has Password: false
+2025/05/24 16:33:18.660678 Code verification result: SESSION_PASSWORD_NEEDED
+2025/05/24 16:33:23.466293 Received 2FA verification request
+2025/05/24 16:33:23.768739 2FA verification failed: incorrect 2FA password. Please check your password and try again. If you've forgotten your password, you can reset it in the official Telegram app
+2025/05/24 16:35:11.163361 Server starting on port 8080
+2025/05/24 16:35:20.873380 Received authentication request for phone: +380500232802
+2025/05/24 16:35:20.956397 Successfully sent verification code to +380500232802
+2025/05/24 16:35:20.956421 Generated hash for phone +380500232802: 8e85b14bc9abc1b708
+2025/05/24 16:35:20.956433 Sending response: map[hash:8e85b14bc9abc1b708 success:true]
+2025/05/24 16:35:25.333197 Raw request body: {"phone":"+380500232802","code":"71416","hash":"8e85b14bc9abc1b708"}
+2025/05/24 16:35:25.333437 Received verification request - Phone: +380500232802, Code: 71416, Hash: 8e85b14bc9abc1b708, Has Password: false
+2025/05/24 16:35:25.446496 Code verification result: SESSION_PASSWORD_NEEDED
+2025/05/24 16:35:30.191859 Received 2FA verification request
+2025/05/24 16:35:30.338997 2FA verification failed: incorrect 2FA password. Please check your password and try again. If you've forgotten your password, you can reset it in the official Telegram app

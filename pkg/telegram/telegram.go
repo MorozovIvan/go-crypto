@@ -448,15 +448,19 @@ func (s *TelegramService) GetCurrentUserID() (int64, error) {
 func (s *TelegramService) AuthenticateUser(phoneNumber string) error {
 	s.logger.Info("Starting authentication process", zap.String("phone", phoneNumber))
 
-	// Ensure we have a session for this phone number
-	session, exists := s.sessions[phoneNumber]
-	if !exists {
-		session = &AuthSession{
-			PhoneNumber: phoneNumber,
-			CreatedAt:   time.Now(),
-		}
-		s.sessions[phoneNumber] = session
+	// Clear any existing session for this phone number
+	s.mu.Lock()
+	delete(s.sessions, phoneNumber)
+	s.mu.Unlock()
+
+	// Create a new session
+	session := &AuthSession{
+		PhoneNumber: phoneNumber,
+		CreatedAt:   time.Now(),
 	}
+	s.mu.Lock()
+	s.sessions[phoneNumber] = session
+	s.mu.Unlock()
 
 	// Wait for client to be ready
 	select {
@@ -497,7 +501,32 @@ func (s *TelegramService) AuthenticateUser(phoneNumber string) error {
 		s.logger.Error("Failed to send code",
 			zap.String("phone", phoneNumber),
 			zap.Error(err))
-		return fmt.Errorf("failed to send code: %v", err)
+
+		// If we get AUTH_RESTART, try to clear the session file and retry once
+		if strings.Contains(err.Error(), "AUTH_RESTART") {
+			s.logger.Info("Received AUTH_RESTART, clearing session and retrying")
+			os.Remove("session.json")
+
+			// Retry the code request
+			sentCode, err = api.AuthSendCode(authCtx, &tg.AuthSendCodeRequest{
+				PhoneNumber: phoneNumber,
+				APIID:       apiID,
+				APIHash:     config.GlobalConfig.TelegramAPIHash,
+				Settings: tg.CodeSettings{
+					AllowFlashcall: false,
+					CurrentNumber:  true,
+					AllowAppHash:   true,
+				},
+			})
+			if err != nil {
+				s.logger.Error("Failed to send code on retry",
+					zap.String("phone", phoneNumber),
+					zap.Error(err))
+				return fmt.Errorf("failed to send code: %v", err)
+			}
+		} else {
+			return fmt.Errorf("failed to send code: %v", err)
+		}
 	}
 
 	// Type assert the response
@@ -509,7 +538,10 @@ func (s *TelegramService) AuthenticateUser(phoneNumber string) error {
 	}
 
 	// Store the phone code hash
+	s.mu.Lock()
 	session.PhoneCodeHash = code.PhoneCodeHash
+	s.mu.Unlock()
+
 	s.logger.Info("Successfully sent verification code",
 		zap.String("phone", phoneNumber),
 		zap.String("type", code.Type.String()))
@@ -634,7 +666,6 @@ func (s *TelegramService) VerifyCode(phoneForVerify, code string) error {
 
 // Verify2FA now also takes phone as an argument
 func (s *TelegramService) Verify2FA(phoneForVerify, password string) error {
-	// Similar changes to VerifyCode: use phoneForVerify for session
 	s.mu.Lock()
 	sess, ok := s.sessions[phoneForVerify]
 	if !ok {
@@ -643,7 +674,7 @@ func (s *TelegramService) Verify2FA(phoneForVerify, password string) error {
 		return fmt.Errorf("no session for phone number %s", phoneForVerify)
 	}
 
-	if !sess.LastPasswordAttempt.IsZero() { // Rate limit
+	if !sess.LastPasswordAttempt.IsZero() {
 		timeSinceLastAttempt := time.Since(sess.LastPasswordAttempt)
 		if timeSinceLastAttempt < 30*time.Second {
 			waitTime := 30*time.Second - timeSinceLastAttempt
@@ -655,10 +686,6 @@ func (s *TelegramService) Verify2FA(phoneForVerify, password string) error {
 	sess.LastPasswordAttempt = time.Now()
 	s.mu.Unlock()
 
-	// ... (rest of the SRP logic, ensuring API calls use a context derived from s.ctx)
-	// The SRP logic itself doesn't directly depend on the phone number once settings are fetched,
-	// but the initial AccountGetPassword call needs to be in the client.Run scope or similar.
-
 	select {
 	case <-s.clientReady:
 		s.logger.Info("Client is ready for AccountGetPassword")
@@ -667,7 +694,74 @@ func (s *TelegramService) Verify2FA(phoneForVerify, password string) error {
 		return fmt.Errorf("client initialization timeout")
 	}
 
-	return fmt.Errorf("2FA SRP logic not implemented")
+	ctx, cancel := context.WithTimeout(s.ctx, 30*time.Second)
+	defer cancel()
+
+	done := make(chan error, 1)
+	go func() {
+		api := s.client.API()
+
+		// Get current password settings
+		passwordSettings, err := api.AccountGetPassword(ctx)
+		if err != nil {
+			s.logger.Error("Failed to get password settings", zap.Error(err))
+			done <- fmt.Errorf("failed to get password settings: %v", err)
+			return
+		}
+
+		// Type assert the password algorithm
+		algo, ok := passwordSettings.CurrentAlgo.(*tg.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow)
+		if !ok {
+			s.logger.Error("Unexpected password algorithm type", zap.String("type", fmt.Sprintf("%T", passwordSettings.CurrentAlgo)))
+			done <- fmt.Errorf("unexpected password algorithm type")
+			return
+		}
+
+		// Type assert the new algorithm
+		newAlgo, ok := passwordSettings.NewAlgo.(*tg.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow)
+		if !ok {
+			s.logger.Error("Unexpected new algorithm type", zap.String("type", fmt.Sprintf("%T", passwordSettings.NewAlgo)))
+			done <- fmt.Errorf("unexpected new algorithm type")
+			return
+		}
+
+		// Calculate password hash
+		passwordHash := s.calculatePasswordHash(
+			algo.Salt1,
+			[]byte(password),
+			algo.Salt2,
+		)
+
+		// Convert SRP parameters
+		p := new(big.Int).SetBytes(newAlgo.P)
+		g := big.NewInt(int64(newAlgo.G))
+		srpB := new(big.Int).SetBytes(passwordSettings.SRPB)
+
+		// Calculate M1
+		m1 := s.calculateM1(p, g, algo.Salt1, srpB, srpB, passwordHash)
+
+		// Sign in with 2FA
+		_, err = api.AuthCheckPassword(ctx, &tg.InputCheckPasswordSRP{
+			SRPID: passwordSettings.SRPID,
+			A:     passwordSettings.SRPB,
+			M1:    m1,
+		})
+		if err != nil {
+			s.logger.Error("2FA verification failed", zap.Error(err))
+			done <- s.formatError(err)
+			return
+		}
+
+		s.logger.Info("2FA verification successful")
+		done <- nil
+	}()
+
+	select {
+	case err := <-done:
+		return err
+	case <-ctx.Done():
+		return fmt.Errorf("2FA verification timed out")
+	}
 }
 
 // GetUserGroups, GetCurrentUserID, ResendCode would also need to accept `phone`

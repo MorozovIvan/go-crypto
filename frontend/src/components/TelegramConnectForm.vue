@@ -211,7 +211,7 @@ export default {
           }
 
           if (errorData.error === '2FA_REQUIRED') {
-            this.$emit('2fa-required')
+            this.$emit('2fa-required', '+' + this.phone)
             return
           }
 

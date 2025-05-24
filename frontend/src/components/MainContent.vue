@@ -32,8 +32,8 @@ export default {
     handleConnected(userId) {
       this.$emit('connect-telegram', userId)
     },
-    handle2FARequired() {
-      this.$emit('2fa-required')
+    handle2FARequired(phone) {
+      this.$emit('2fa-required', phone)
     }
   }
 }
