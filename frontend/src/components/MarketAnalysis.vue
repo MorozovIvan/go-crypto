@@ -33,6 +33,42 @@
         </ul>
       </div>
     </div>
+    <div class="metric-card">
+      <h3>RSI (Relative Strength Index)</h3>
+      <div v-if="getMetricByKey('rsi').loading" class="loading">Loading...</div>
+      <div v-else-if="getMetricByKey('rsi').error" class="error">{{ getMetricByKey('rsi').error }}</div>
+      <div v-else>
+        <div class="metric-value">{{ getMetricByKey('rsi').value ? getMetricByKey('rsi').value.toFixed(2) : 'N/A' }}</div>
+        <div class="metric-indicator" :class="getRSIIndicator(getMetricByKey('rsi').value)">
+          {{ getRSIIndicatorText(getMetricByKey('rsi').value) }}
+        </div>
+        <div class="metric-chart">
+          <LineChart
+            :data="getMetricByKey('rsi').historical || []"
+            :labels="['5d', '4d', '3d', '2d', 'Now']"
+            :color="getRSIColor(getMetricByKey('rsi').value)"
+          />
+        </div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <h3>Google Trends</h3>
+      <div v-if="getMetricByKey('google-trends').loading" class="loading">Loading...</div>
+      <div v-else-if="getMetricByKey('google-trends').error" class="error">{{ getMetricByKey('google-trends').error }}</div>
+      <div v-else>
+        <div class="metric-value">{{ getMetricByKey('google-trends').value ? getMetricByKey('google-trends').value.toFixed(2) : 'N/A' }}</div>
+        <div class="metric-indicator" :class="getTrendsIndicator(getMetricByKey('google-trends').value)">
+          {{ getTrendsIndicatorText(getMetricByKey('google-trends').value) }}
+        </div>
+        <div class="metric-chart">
+          <LineChart
+            :data="getMetricByKey('google-trends').historical || []"
+            :labels="['5d', '4d', '3d', '2d', 'Now']"
+            :color="getTrendsColor(getMetricByKey('google-trends').value)"
+          />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -119,7 +155,8 @@ export default defineComponent({
           chartData: [],
           chartLabels: [],
           error: false,
-          loading: true
+          loading: true,
+          historical: []
         },
         {
           key: 'market-cap',
@@ -134,7 +171,7 @@ export default defineComponent({
           loading: true
         },
         {
-          key: 'trends',
+          key: 'google-trends',
           title: 'Google Trends',
           value: null,
           indicator: 'Hold',
@@ -143,7 +180,8 @@ export default defineComponent({
           chartData: [],
           chartLabels: [],
           error: false,
-          loading: true
+          loading: true,
+          historical: []
         },
         {
           key: 'ma-signal',
@@ -327,7 +365,8 @@ export default defineComponent({
           'whale-transactions': '/api/whale-transactions',
           'funding-rate': '/api/funding-rate',
           'open-interest': '/api/open-interest',
-          'ma-signal': '/api/moving-averages'
+          'ma-signal': '/api/moving-averages',
+          'google-trends': '/api/google-trends'
         };
 
         const endpoint = endpointMap[key] || `/api/${key}`;
@@ -441,14 +480,17 @@ export default defineComponent({
           this.metrics[idx].value = this.getErrorMessage(data.error);
           return;
         }
-        if (data && data.trend !== undefined) {
-          this.metrics[idx].value = data.trend;
-          this.metrics[idx].chartData = data.history || [0.5, 0.6, 0.7, 0.8, 1];
-          this.metrics[idx].chartLabels = ['5d', '4d', '3d', '2d', 'Now'];
-          if (data.trend === 'High Rising') {
+        if (data && data.value !== undefined) {
+          // Format the trend value as a percentage
+          this.metrics[idx].value = `${(data.value * 100).toFixed(1)}%`;
+          this.metrics[idx].chartData = data.chart_data || [];
+          this.metrics[idx].chartLabels = data.chart_labels || ['5d', '4d', '3d', '2d', 'Now'];
+          
+          // Set indicator and score based on trend value
+          if (data.value > 0.1) { // More than 10% increase
             this.metrics[idx].indicator = 'Buy';
             this.metrics[idx].score = 1;
-          } else if (data.trend === 'Low Falling') {
+          } else if (data.value < -0.1) { // More than 10% decrease
             this.metrics[idx].indicator = 'Sell';
             this.metrics[idx].score = -1;
           } else {
@@ -458,7 +500,7 @@ export default defineComponent({
           this.metrics[idx].error = false;
         } else {
           this.metrics[idx].error = true;
-          this.metrics[idx].value = 'RT';
+          this.metrics[idx].value = 'No data';
         }
       } catch (e) {
         this.metrics[idx].error = true;
@@ -520,11 +562,8 @@ export default defineComponent({
         
         this.metrics.rsi = {
           ...this.metrics.rsi,
-          value: data.value,
-          indicator: data.indicator,
-          score: data.score,
-          chartData: data.chart_data || [],
-          chartLabels: data.chart_labels || [],
+          value: data.current,
+          historical: data.historical,
           loading: false,
           error: false
         };
@@ -533,10 +572,7 @@ export default defineComponent({
         this.metrics.rsi = {
           ...this.metrics.rsi,
           value: null,
-          indicator: 'Hold',
-          score: 0,
-          chartData: [],
-          chartLabels: [],
+          historical: [],
           loading: false,
           error: true
         };
@@ -653,7 +689,141 @@ export default defineComponent({
         console.log('[refresh] Starting scheduled refresh...')
         this.fetchAllMetrics()
       }, 5 * 60 * 1000)
+    },
+    getRSIIndicator(value) {
+      if (!value) return 'neutral';
+      if (value >= 70) return 'overbought';
+      if (value <= 30) return 'oversold';
+      return 'neutral';
+    },
+    getRSIIndicatorText(value) {
+      if (!value) return 'N/A';
+      if (value >= 70) return 'Overbought';
+      if (value <= 30) return 'Oversold';
+      return 'Neutral';
+    },
+    getRSIColor(value) {
+      if (!value) return '#3b82f6';
+      if (value >= 70) return '#ef4444';
+      if (value <= 30) return '#22c55e';
+      return '#3b82f6';
+    },
+    getTrendsIndicator(value) {
+      if (!value) return 'medium';
+      if (value >= 70) return 'high';
+      if (value <= 30) return 'low';
+      return 'medium';
+    },
+    getTrendsIndicatorText(value) {
+      if (!value) return 'N/A';
+      if (value >= 70) return 'High Interest';
+      if (value <= 30) return 'Low Interest';
+      return 'Moderate Interest';
+    },
+    getTrendsColor(value) {
+      if (!value) return '#3b82f6';
+      if (value >= 70) return '#ef4444';
+      if (value <= 30) return '#22c55e';
+      return '#3b82f6';
+    },
+    getMetricByKey(key) {
+      return this.metrics.find(m => m.key === key) || {
+        loading: true,
+        error: null,
+        value: null,
+        historical: []
+      };
+    },
+    async fetchGoogleTrends() {
+      const idx = this.metrics.findIndex(m => m.key === 'google-trends');
+      try {
+        const res = await fetch('/api/google-trends');
+        const data = await res.json();
+        
+        // Handle error response
+        if (data.error) {
+          console.error('Google Trends error:', data.error);
+          this.metrics[idx].error = true;
+          this.metrics[idx].value = data.error;
+          this.metrics[idx].chartData = [];
+          this.metrics[idx].chartLabels = [];
+          this.metrics[idx].indicator = 'Hold';
+          this.metrics[idx].score = 0;
+          return;
+        }
+
+        // Validate data
+        if (!data || data.value === undefined) {
+          console.error('Invalid Google Trends data:', data);
+          this.metrics[idx].error = true;
+          this.metrics[idx].value = 'Invalid data received';
+          this.metrics[idx].chartData = [];
+          this.metrics[idx].chartLabels = [];
+          this.metrics[idx].indicator = 'Hold';
+          this.metrics[idx].score = 0;
+          return;
+        }
+
+        // Validate value is within expected range (0-100)
+        const value = Math.max(0, Math.min(100, parseFloat(data.value)));
+        this.metrics[idx].value = value.toFixed(1);
+        this.metrics[idx].chartData = data.historical || [];
+        this.metrics[idx].chartLabels = ['5d', '4d', '3d', '2d', 'Now'];
+        
+        // Calculate average value for comparison
+        const avgValue = this.metrics[idx].chartData.reduce((a, b) => a + b, 0) / this.metrics[idx].chartData.length;
+        
+        // Set indicator and score based on current value vs average
+        if (value < avgValue * 0.75) {
+          this.metrics[idx].indicator = 'Buy';
+          this.metrics[idx].score = 1;
+        } else if (value > avgValue * 1.25) {
+          this.metrics[idx].indicator = 'Sell';
+          this.metrics[idx].score = -1;
+        } else {
+          this.metrics[idx].indicator = 'Hold';
+          this.metrics[idx].score = 0;
+        }
+        this.metrics[idx].error = false;
+      } catch (e) {
+        console.error('Error fetching Google Trends:', e);
+        this.metrics[idx].error = true;
+        this.metrics[idx].value = `Error: ${e.message}`;
+        this.metrics[idx].chartData = [];
+        this.metrics[idx].chartLabels = [];
+        this.metrics[idx].indicator = 'Hold';
+        this.metrics[idx].score = 0;
+      } finally {
+        this.metrics[idx].loading = false;
+        this.calculateSignal();
+      }
     }
   }
 });
-</script> 
+</script>
+
+<style scoped>
+.metric-indicator.overbought {
+  color: #ef4444;
+}
+
+.metric-indicator.oversold {
+  color: #22c55e;
+}
+
+.metric-indicator.neutral {
+  color: #3b82f6;
+}
+
+.metric-indicator.high {
+  color: #ef4444;
+}
+
+.metric-indicator.low {
+  color: #22c55e;
+}
+
+.metric-indicator.medium {
+  color: #3b82f6;
+}
+</style> 

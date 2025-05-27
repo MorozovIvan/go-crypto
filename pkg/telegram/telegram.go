@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"
@@ -28,6 +29,7 @@ const (
 	minPasswordAttemptInterval = 30 * time.Second
 	maxPasswordAttempts        = 5
 	passwordAttemptWindow      = 24 * time.Hour
+	floodWaitTime              = 24 * time.Hour // Default flood wait time
 )
 
 // Add this struct to track password attempts
@@ -393,15 +395,9 @@ func (s *TelegramService) GetCurrentUserID() (int64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Create a new client for this operation
-	client, err := telegram.ClientFromEnvironment(telegram.Options{
-		Logger: s.logger,
-		SessionStorage: &telegram.FileSessionStorage{
-			Path: "session.json",
-		},
-	})
-	if err != nil {
-		return 0, fmt.Errorf("failed to create client: %v", err)
+	// Use the existing authenticated client instead of creating a new one
+	if s.client == nil {
+		return 0, fmt.Errorf("no authenticated client available")
 	}
 
 	var userID int64
@@ -410,22 +406,10 @@ func (s *TelegramService) GetCurrentUserID() (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	err = client.Run(ctx, func(ctx context.Context) error {
-		api := client.API()
+	err := s.client.Run(ctx, func(ctx context.Context) error {
+		api := s.client.API()
 
-		// First, check if we're authorized
-		_, err := api.AuthExportAuthorization(ctx, 2) // Use DC ID 2 (default)
-		if err != nil {
-			if strings.Contains(err.Error(), "AUTH_KEY_UNREGISTERED") {
-				// Clear the session file if authentication is invalid
-				os.Remove("session.json")
-				s.client = nil // Clear the client
-				return fmt.Errorf("session expired, please re-authenticate")
-			}
-			return fmt.Errorf("failed to check authorization: %v", err)
-		}
-
-		// Get current user
+		// Get current user directly without checking authorization
 		user, err := api.UsersGetUsers(ctx, []tg.InputUserClass{&tg.InputUserSelf{}})
 		if err != nil {
 			s.logger.Error("Failed to get current user", zap.Error(err))
@@ -460,7 +444,7 @@ func (s *TelegramService) GetCurrentUserID() (int64, error) {
 	})
 
 	if err != nil {
-		if strings.Contains(err.Error(), "session expired") {
+		if strings.Contains(err.Error(), "AUTH_KEY_UNREGISTERED") {
 			// Clear the session file if authentication is invalid
 			os.Remove("session.json")
 			s.client = nil // Clear the client
@@ -781,10 +765,12 @@ func (s *TelegramService) Verify2FA(phoneForVerify, password string) error {
 	defer cancel()
 
 	done := make(chan error, 1)
+
 	go func() {
+		defer close(done)
 		api := s.client.API()
 
-		// Get current password settings
+		// Get password settings
 		passwordSettings, err := api.AccountGetPassword(ctx)
 		if err != nil {
 			s.logger.Error("Failed to get password settings", zap.Error(err))
@@ -830,89 +816,126 @@ func (s *TelegramService) Verify2FA(phoneForVerify, password string) error {
 
 		// Calculate x = PH2(password, salt1, salt2)
 		x := s.calculatePH2([]byte(password), algo.Salt1, algo.Salt2)
-		s.logger.Info("Calculated x",
-			zap.String("x", x.Text(16)),
-		)
+		s.logger.Info("SRP Debug: Calculated x", zap.String("x", x.Text(16)))
 
 		// Calculate v = pow(g, x) mod p
 		v := new(big.Int).Exp(g, x, p)
-		s.logger.Info("Calculated v",
-			zap.String("v", v.Text(16)),
-		)
+		s.logger.Info("SRP Debug: Calculated v", zap.String("v", v.Text(16)))
 
 		// Calculate k = H(p | g)
 		k := s.calculateK(p, g)
-		s.logger.Info("Calculated k",
-			zap.String("k", k.Text(16)),
-		)
+		s.logger.Info("SRP Debug: Calculated k", zap.String("k", k.Text(16)))
 
 		// Calculate k_v = (k * v) mod p
 		kv := new(big.Int).Mul(k, v)
 		kv.Mod(kv, p)
-		s.logger.Info("Calculated k_v",
-			zap.String("k_v", kv.Text(16)),
-		)
+		s.logger.Info("SRP Debug: Calculated k_v", zap.String("k_v", kv.Text(16)))
 
 		// Generate client's private key (a)
-		a := new(big.Int).SetBytes(s.calculatePH2([]byte(password), algo.Salt1, algo.Salt2).Bytes())
-		s.logger.Info("Generated client private key",
-			zap.String("a", a.Text(16)),
-		)
+		aBytes := make([]byte, 256) // 2048 bits
+		_, err = io.ReadFull(rand.Reader, aBytes)
+		if err != nil {
+			s.logger.Error("Failed to generate random private key", zap.Error(err))
+			done <- fmt.Errorf("failed to generate random private key: %v", err)
+			return
+		}
+		a := new(big.Int).SetBytes(aBytes)
+		a.Mod(a, p) // Ensure a is in the range [0, p-1]
+		s.logger.Info("SRP Debug: Generated client private key", zap.String("a", a.Text(16)))
 
 		// Calculate client's public key (A = g^a mod p)
 		A := new(big.Int).Exp(g, a, p)
-		s.logger.Info("Calculated client public key",
-			zap.String("A", A.Text(16)),
-		)
+		s.logger.Info("SRP Debug: Calculated client public key", zap.String("A", A.Text(16)))
 
 		// Calculate u = H(A | B)
 		u := s.calculateU(A, srpB)
-		s.logger.Info("Calculated u",
-			zap.String("u", u.Text(16)),
-		)
+		s.logger.Info("SRP Debug: Calculated u", zap.String("u", u.Text(16)))
 
 		// Calculate t = (g_b - k_v) mod p
 		t := new(big.Int).Sub(srpB, kv)
+		if t.Sign() < 0 {
+			t.Add(t, p)
+		}
 		t.Mod(t, p)
-		s.logger.Info("Calculated t",
-			zap.String("t", t.Text(16)),
-		)
+		s.logger.Info("SRP Debug: Calculated t", zap.String("t", t.Text(16)))
 
 		// Calculate s_a = pow(t, a + u * x) mod p
 		ux := new(big.Int).Mul(u, x)
 		aux := new(big.Int).Add(a, ux)
+		aux.Mod(aux, p) // Ensure aux is in the range [0, p-1]
 		s_a := new(big.Int).Exp(t, aux, p)
-		s.logger.Info("Calculated s_a",
-			zap.String("s_a", s_a.Text(16)),
-		)
+		s.logger.Info("SRP Debug: Calculated s_a", zap.String("s_a", s_a.Text(16)))
 
 		// Calculate k_a = H(s_a)
+		// Ensure s_a is properly padded to 256 bytes
+		s_aBytes := make([]byte, 256)
+		s_aBytesPadded := s_a.Bytes()
+		copy(s_aBytes[256-len(s_aBytesPadded):], s_aBytesPadded)
+
 		h := sha256.New()
-		h.Write(s_a.Bytes())
+		h.Write(s_aBytes)
 		k_a := h.Sum(nil)
-		s.logger.Info("Calculated k_a",
-			zap.String("k_a", hex.EncodeToString(k_a)),
-		)
+		s.logger.Info("SRP Debug: Calculated k_a", zap.String("k_a", hex.EncodeToString(k_a)))
 
 		// Calculate M1 = H(H(p) xor H(g) | H(salt1) | H(salt2) | g_a | g_b | k_a)
 		m1 := s.calculateM1(p, g, algo.Salt1, algo.Salt2, A, srpB, k_a)
-		s.logger.Info("Calculated M1",
-			zap.String("m1", hex.EncodeToString(m1)),
-		)
+		s.logger.Info("SRP Debug: Calculated M1", zap.String("m1", hex.EncodeToString(m1)))
+
+		// Ensure A is properly padded to 256 bytes
+		ABytes := make([]byte, 256)
+		aBytesPadded := A.Bytes()
+		copy(ABytes[256-len(aBytesPadded):], aBytesPadded)
 
 		// Sign in with 2FA
-		_, err = api.AuthCheckPassword(ctx, &tg.InputCheckPasswordSRP{
+		authResult, err := api.AuthCheckPassword(ctx, &tg.InputCheckPasswordSRP{
 			SRPID: passwordSettings.SRPID,
-			A:     A.Bytes(),
+			A:     ABytes,
 			M1:    m1,
 		})
 		if err != nil {
 			s.logger.Error("2FA verification failed", zap.Error(err))
-			done <- s.formatError(err)
+			if strings.Contains(err.Error(), "PHONE_PASSWORD_FLOOD") {
+				// Extract wait time from error if available
+				waitTime := floodWaitTime
+				if parts := strings.Split(err.Error(), "FLOOD_WAIT_"); len(parts) > 1 {
+					if secs, err := strconv.Atoi(parts[1]); err == nil {
+						waitTime = time.Duration(secs) * time.Second
+					}
+				}
+				done <- fmt.Errorf("too many attempts. Please wait %s before trying again", formatWaitTime(int(waitTime.Seconds())))
+			} else {
+				done <- s.formatError(err)
+			}
 			return
 		}
 
 		s.logger.Info("2FA verification successful")
+
+		// Get user ID immediately after successful authentication
+		// while we're still in the authenticated context
+		if authUser, ok := authResult.(*tg.AuthAuthorization); ok {
+			if user, ok := authUser.User.(*tg.User); ok {
+				s.mu.Lock()
+				s.userID = user.ID
+				s.userAuth = true
+				s.mu.Unlock()
+				s.logger.Info("Successfully authenticated and got user ID",
+					zap.Int64("userID", user.ID),
+					zap.String("username", user.Username),
+					zap.String("firstName", user.FirstName),
+					zap.String("lastName", user.LastName),
+				)
+			} else {
+				s.logger.Error("Unexpected user type in auth result", zap.String("type", fmt.Sprintf("%T", authUser.User)))
+				done <- fmt.Errorf("unexpected user type in auth result")
+				return
+			}
+		} else {
+			s.logger.Error("Unexpected auth result type", zap.String("type", fmt.Sprintf("%T", authResult)))
+			done <- fmt.Errorf("unexpected auth result type")
+			return
+		}
+
 		done <- nil
 	}()
 
@@ -1032,13 +1055,22 @@ func (s *TelegramService) calculatePH2(password, salt1, salt2 []byte) *big.Int {
 
 func (s *TelegramService) calculateK(p, g *big.Int) *big.Int {
 	// k = H(p | g)
+	// Ensure p and g are properly padded to 256 bytes
+	pBytes := make([]byte, 256)
+	pBytesPadded := p.Bytes()
+	copy(pBytes[256-len(pBytesPadded):], pBytesPadded)
+
+	gBytes := make([]byte, 256)
+	gBytesPadded := g.Bytes()
+	copy(gBytes[256-len(gBytesPadded):], gBytesPadded)
+
 	h := sha256.New()
-	h.Write(p.Bytes())
-	h.Write(g.Bytes())
+	h.Write(pBytes)
+	h.Write(gBytes)
 	result := h.Sum(nil)
 	s.logger.Info("K calculation",
-		zap.String("p", hex.EncodeToString(p.Bytes())),
-		zap.String("g", hex.EncodeToString(g.Bytes())),
+		zap.String("p", hex.EncodeToString(pBytes)),
+		zap.String("g", hex.EncodeToString(gBytes)),
 		zap.String("result", hex.EncodeToString(result)),
 	)
 	return new(big.Int).SetBytes(result)
@@ -1046,13 +1078,22 @@ func (s *TelegramService) calculateK(p, g *big.Int) *big.Int {
 
 func (s *TelegramService) calculateU(A, B *big.Int) *big.Int {
 	// u = H(g_a | g_b)
+	// Ensure A and B are properly padded to 256 bytes
+	ABytes := make([]byte, 256)
+	ABytesPadded := A.Bytes()
+	copy(ABytes[256-len(ABytesPadded):], ABytesPadded)
+
+	BBytes := make([]byte, 256)
+	BBytesPadded := B.Bytes()
+	copy(BBytes[256-len(BBytesPadded):], BBytesPadded)
+
 	h := sha256.New()
-	h.Write(A.Bytes())
-	h.Write(B.Bytes())
+	h.Write(ABytes)
+	h.Write(BBytes)
 	result := h.Sum(nil)
 	s.logger.Info("U calculation",
-		zap.String("A", hex.EncodeToString(A.Bytes())),
-		zap.String("B", hex.EncodeToString(B.Bytes())),
+		zap.String("A", hex.EncodeToString(ABytes)),
+		zap.String("B", hex.EncodeToString(BBytes)),
 		zap.String("result", hex.EncodeToString(result)),
 	)
 	return new(big.Int).SetBytes(result)
@@ -1061,9 +1102,18 @@ func (s *TelegramService) calculateU(A, B *big.Int) *big.Int {
 func (s *TelegramService) calculateM1(p, g *big.Int, salt1, salt2 []byte, A, B *big.Int, k_a []byte) []byte {
 	// M1 = H(H(p) xor H(g) | H(salt1) | H(salt2) | g_a | g_b | k_a)
 
+	// Ensure p and g are properly padded to 256 bytes
+	pBytes := make([]byte, 256)
+	pBytesPadded := p.Bytes()
+	copy(pBytes[256-len(pBytesPadded):], pBytesPadded)
+
+	gBytes := make([]byte, 256)
+	gBytesPadded := g.Bytes()
+	copy(gBytes[256-len(gBytesPadded):], gBytesPadded)
+
 	// Calculate H(p)
 	h := sha256.New()
-	h.Write(p.Bytes())
+	h.Write(pBytes)
 	hp := h.Sum(nil)
 	s.logger.Info("M1 H(p)",
 		zap.String("hp", hex.EncodeToString(hp)),
@@ -1071,7 +1121,7 @@ func (s *TelegramService) calculateM1(p, g *big.Int, salt1, salt2 []byte, A, B *
 
 	// Calculate H(g)
 	h.Reset()
-	h.Write(g.Bytes())
+	h.Write(gBytes)
 	hg := h.Sum(nil)
 	s.logger.Info("M1 H(g)",
 		zap.String("hg", hex.EncodeToString(hg)),
@@ -1102,13 +1152,22 @@ func (s *TelegramService) calculateM1(p, g *big.Int, salt1, salt2 []byte, A, B *
 		zap.String("hsalt2", hex.EncodeToString(hsalt2)),
 	)
 
+	// Ensure A and B are properly padded to 256 bytes
+	ABytes := make([]byte, 256)
+	ABytesPadded := A.Bytes()
+	copy(ABytes[256-len(ABytesPadded):], ABytesPadded)
+
+	BBytes := make([]byte, 256)
+	BBytesPadded := B.Bytes()
+	copy(BBytes[256-len(BBytesPadded):], BBytesPadded)
+
 	// Calculate final M1
 	h.Reset()
 	h.Write(pxorg)
 	h.Write(hsalt1)
 	h.Write(hsalt2)
-	h.Write(A.Bytes())
-	h.Write(B.Bytes())
+	h.Write(ABytes)
+	h.Write(BBytes)
 	h.Write(k_a)
 	result := h.Sum(nil)
 	s.logger.Info("M1 final result",
@@ -1125,15 +1184,9 @@ func (s *TelegramService) GetCurrentUser() (map[string]interface{}, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Create a new client for this operation
-	client, err := telegram.ClientFromEnvironment(telegram.Options{
-		Logger: s.logger,
-		SessionStorage: &telegram.FileSessionStorage{
-			Path: "session.json",
-		},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create client: %v", err)
+	// Use the existing authenticated client instead of creating a new one
+	if s.client == nil {
+		return nil, fmt.Errorf("no authenticated client available")
 	}
 
 	var user map[string]interface{}
@@ -1142,19 +1195,10 @@ func (s *TelegramService) GetCurrentUser() (map[string]interface{}, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	err = client.Run(ctx, func(ctx context.Context) error {
-		api := client.API()
+	err := s.client.Run(ctx, func(ctx context.Context) error {
+		api := s.client.API()
 
-		// First, check if we're authorized
-		_, err := api.AuthExportAuthorization(ctx, 2) // Use DC ID 2 (default)
-		if err != nil {
-			if strings.Contains(err.Error(), "AUTH_KEY_UNREGISTERED") {
-				return fmt.Errorf("session expired, please re-authenticate")
-			}
-			return fmt.Errorf("failed to check authorization: %v", err)
-		}
-
-		// Get current user info
+		// Get current user info directly without checking authorization
 		me, err := api.UsersGetUsers(ctx, []tg.InputUserClass{&tg.InputUserSelf{}})
 		if err != nil {
 			return fmt.Errorf("failed to get current user: %v", err)
@@ -1180,7 +1224,7 @@ func (s *TelegramService) GetCurrentUser() (map[string]interface{}, error) {
 	})
 
 	if err != nil {
-		if strings.Contains(err.Error(), "session expired") {
+		if strings.Contains(err.Error(), "AUTH_KEY_UNREGISTERED") {
 			// Clear the session file if authentication is invalid
 			os.Remove("session.json")
 			return nil, fmt.Errorf("session expired, please re-authenticate")

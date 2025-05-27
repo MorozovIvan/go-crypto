@@ -241,23 +241,14 @@ func handleTelegramVerify2FA(c *gin.Context) {
 		return
 	}
 
-	// Get the user ID after successful authentication
-	userID, err := telegramService.GetCurrentUserID()
-	if err != nil {
-		log.Printf("Failed to get user ID: %v", err)
+	// Get the user ID from the service status (it's already stored after successful 2FA)
+	status := telegramService.GetStatus()
+	userID, ok := status["user_id"].(int64)
+	if !ok || userID == 0 {
+		log.Printf("Failed to get user ID from service status: %v", status)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "USER_ID_FAILED",
 			"message": "Failed to get user ID",
-		})
-		return
-	}
-
-	// Verify that we got a valid user ID
-	if userID == 0 {
-		log.Printf("Invalid user ID received: %d", userID)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "INVALID_USER_ID",
-			"message": "Failed to get valid user ID",
 		})
 		return
 	}
@@ -977,7 +968,7 @@ func handleOpenInterest(c *gin.Context) {
 
 // Market metrics handlers
 func handleAltcoinSeasonIndex(c *gin.Context) {
-	index, err := marketService.GetAltcoinSeasonIndex()
+	index, historical, err := marketService.GetAltcoinSeasonIndex()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":        err.Error(),
@@ -988,12 +979,6 @@ func handleAltcoinSeasonIndex(c *gin.Context) {
 			"chart_labels": nil,
 		})
 		return
-	}
-
-	// Get historical data (last 5 days)
-	historical := make([]float64, 5)
-	for i := range historical {
-		historical[i] = index - float64(i*2) // Simple trend for demonstration
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -1114,24 +1099,10 @@ func getScore(value float64, lowerBound, upperBound float64) float64 {
 }
 
 func handleRSI(c *gin.Context) {
-	apiKey := os.Getenv("CMC_API_KEY")
-	if apiKey == "" {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":        "API key not set",
-			"value":        nil,
-			"indicator":    "Hold",
-			"score":        0,
-			"chart_data":   nil,
-			"chart_labels": nil,
-		})
-		return
-	}
-
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC", nil)
+	rsi, historical, err := marketService.GetRSI()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":        "Failed to create request",
+			"error":        err.Error(),
 			"value":        nil,
 			"indicator":    "Hold",
 			"score":        0,
@@ -1141,255 +1112,13 @@ func handleRSI(c *gin.Context) {
 		return
 	}
 
-	req.Header.Set("X-CMC_PRO_API_KEY", apiKey)
-	resp, err := client.Do(req)
-	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{
-			"error":        "Failed to fetch from CoinMarketCap",
-			"value":        nil,
-			"indicator":    "Hold",
-			"score":        0,
-			"chart_data":   nil,
-			"chart_labels": nil,
-		})
-		return
-	}
-	defer resp.Body.Close()
-
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":        "Failed to parse response",
-			"value":        nil,
-			"indicator":    "Hold",
-			"score":        0,
-			"chart_data":   nil,
-			"chart_labels": nil,
-		})
-		return
-	}
-
-	data := result["data"].(map[string]interface{})
-	btcData := data["BTC"].(map[string]interface{})
-	quote := btcData["quote"].(map[string]interface{})["USD"].(map[string]interface{})
-
-	// Calculate RSI based on price momentum
-	percentChange24h := quote["percent_change_24h"].(float64)
-	rsi := 50.0 + (percentChange24h / 2.0) // Simple RSI calculation
-
-	// Ensure RSI is between 0 and 100
-	if rsi > 100 {
-		rsi = 100
-	} else if rsi < 0 {
-		rsi = 0
-	}
-
-	// Get historical data (last 5 days)
-	historical := make([]float64, 5)
-	for i := range historical {
-		historical[i] = rsi - float64(i*2) // Simple trend for demonstration
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"value":        rsi,
-		"indicator":    getIndicator(rsi, 30, 70),
-		"score":        getScore(rsi, 30, 70),
-		"chart_data":   historical,
-		"chart_labels": []string{"5d", "4d", "3d", "2d", "Now"},
-	})
-}
-
-func handleMovingAverages(c *gin.Context) {
-	apiKey := os.Getenv("CMC_API_KEY")
-	if apiKey == "" {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":        "API key not set",
-			"value":        nil,
-			"indicator":    "Hold",
-			"score":        0,
-			"chart_data":   nil,
-			"chart_labels": nil,
-		})
-		return
-	}
-
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC", nil)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":        "Failed to create request",
-			"value":        nil,
-			"indicator":    "Hold",
-			"score":        0,
-			"chart_data":   nil,
-			"chart_labels": nil,
-		})
-		return
-	}
-
-	req.Header.Set("X-CMC_PRO_API_KEY", apiKey)
-	resp, err := client.Do(req)
-	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{
-			"error":        "Failed to fetch from CoinMarketCap",
-			"value":        nil,
-			"indicator":    "Hold",
-			"score":        0,
-			"chart_data":   nil,
-			"chart_labels": nil,
-		})
-		return
-	}
-	defer resp.Body.Close()
-
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":        "Failed to parse response",
-			"value":        nil,
-			"indicator":    "Hold",
-			"score":        0,
-			"chart_data":   nil,
-			"chart_labels": nil,
-		})
-		return
-	}
-
-	data := result["data"].(map[string]interface{})
-	btcData := data["BTC"].(map[string]interface{})
-	quote := btcData["quote"].(map[string]interface{})["USD"].(map[string]interface{})
-
-	// Calculate moving average signal based on price momentum
-	percentChange24h := quote["percent_change_24h"].(float64)
-	signal := "Hold"
-	score := 0
-
-	if percentChange24h > 2.0 {
-		signal = "Buy"
-		score = 1
-	} else if percentChange24h < -2.0 {
-		signal = "Sell"
-		score = -1
-	}
-
-	// Get historical data (last 5 days)
-	historical := make([]float64, 5)
-	for i := range historical {
-		if percentChange24h > 0 {
-			historical[i] = 1
-		} else {
-			historical[i] = 0
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"value":        signal,
-		"indicator":    signal,
-		"score":        score,
-		"chart_data":   historical,
-		"chart_labels": []string{"5d", "4d", "3d", "2d", "Now"},
-	})
-}
-
-func handleFearGreed(c *gin.Context) {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://api.alternative.me/fng/", nil)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":        "Failed to create request",
-			"value":        nil,
-			"indicator":    "Hold",
-			"score":        0,
-			"chart_data":   nil,
-			"chart_labels": nil,
-		})
-		return
-	}
-
-	q := req.URL.Query()
-	q.Add("limit", "5")
-	q.Add("format", "json")
-	req.URL.RawQuery = q.Encode()
-
-	resp, err := client.Do(req)
-	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{
-			"error":        "Failed to fetch from Fear & Greed Index API",
-			"value":        nil,
-			"indicator":    "Hold",
-			"score":        0,
-			"chart_data":   nil,
-			"chart_labels": nil,
-		})
-		return
-	}
-	defer resp.Body.Close()
-
-	var result struct {
-		Data []struct {
-			Value      string `json:"value"`
-			ValueClass string `json:"value_classification"`
-			Timestamp  string `json:"timestamp"`
-		} `json:"data"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":        "Failed to parse Fear & Greed Index response",
-			"value":        nil,
-			"indicator":    "Hold",
-			"score":        0,
-			"chart_data":   nil,
-			"chart_labels": nil,
-		})
-		return
-	}
-
-	if len(result.Data) == 0 {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":        "No data received from Fear & Greed Index API",
-			"value":        nil,
-			"indicator":    "Hold",
-			"score":        0,
-			"chart_data":   nil,
-			"chart_labels": nil,
-		})
-		return
-	}
-
-	// Get current value
-	currentValue, err := strconv.Atoi(result.Data[0].Value)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":        "Failed to parse Fear & Greed Index value",
-			"value":        nil,
-			"indicator":    "Hold",
-			"score":        0,
-			"chart_data":   nil,
-			"chart_labels": nil,
-		})
-		return
-	}
-
-	// Get historical data
-	historical := make([]float64, len(result.Data))
-	labels := make([]string, len(result.Data))
-	for i, data := range result.Data {
-		value, _ := strconv.Atoi(data.Value)
-		historical[i] = float64(value)
-		// Convert timestamp to date
-		timestamp, _ := strconv.ParseInt(data.Timestamp, 10, 64)
-		date := time.Unix(timestamp, 0)
-		labels[i] = date.Format("Jan 02")
-	}
-
-	// Calculate indicator and score
+	// Calculate indicator and score based on RSI value
 	var indicator string
 	var score float64
-	if currentValue <= 25 {
+	if rsi <= 30 {
 		indicator = "Buy"
 		score = 1
-	} else if currentValue >= 75 {
+	} else if rsi >= 70 {
 		indicator = "Sell"
 		score = -1
 	} else {
@@ -1398,11 +1127,11 @@ func handleFearGreed(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"value":        currentValue,
+		"value":        rsi,
 		"indicator":    indicator,
 		"score":        score,
 		"chart_data":   historical,
-		"chart_labels": labels,
+		"chart_labels": []string{"5d", "4d", "3d", "2d", "Now"},
 	})
 }
 
@@ -1784,6 +1513,273 @@ func handleLiquidation(c *gin.Context) {
 	})
 }
 
+func handleGoogleTrends(c *gin.Context) {
+	value, historical, err := marketService.GetGoogleTrends()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":        err.Error(),
+			"value":        nil,
+			"indicator":    "Hold",
+			"score":        0,
+			"chart_data":   nil,
+			"chart_labels": nil,
+		})
+		return
+	}
+
+	// Calculate average value for comparison
+	avgValue := 0.0
+	for _, v := range historical {
+		avgValue += v
+	}
+	avgValue /= float64(len(historical))
+
+	// Determine indicator and score based on current value vs average
+	var indicator string
+	var score float64
+	if value < avgValue*0.75 {
+		indicator = "Buy"
+		score = 1
+	} else if value > avgValue*1.25 {
+		indicator = "Sell"
+		score = -1
+	} else {
+		indicator = "Hold"
+		score = 0
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"value":        value,
+		"indicator":    indicator,
+		"score":        score,
+		"chart_data":   historical,
+		"chart_labels": []string{"5d", "4d", "3d", "2d", "Now"},
+	})
+}
+
+func handleMovingAverages(c *gin.Context) {
+	apiKey := os.Getenv("CMC_API_KEY")
+	if apiKey == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":        "API key not set",
+			"value":        nil,
+			"indicator":    "Hold",
+			"score":        0,
+			"chart_data":   nil,
+			"chart_labels": nil,
+		})
+		return
+	}
+
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":        "Failed to create request",
+			"value":        nil,
+			"indicator":    "Hold",
+			"score":        0,
+			"chart_data":   nil,
+			"chart_labels": nil,
+		})
+		return
+	}
+
+	req.Header.Set("X-CMC_PRO_API_KEY", apiKey)
+	resp, err := client.Do(req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{
+			"error":        "Failed to fetch from CoinMarketCap",
+			"value":        nil,
+			"indicator":    "Hold",
+			"score":        0,
+			"chart_data":   nil,
+			"chart_labels": nil,
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":        "Failed to parse response",
+			"value":        nil,
+			"indicator":    "Hold",
+			"score":        0,
+			"chart_data":   nil,
+			"chart_labels": nil,
+		})
+		return
+	}
+
+	data := result["data"].(map[string]interface{})
+	btcData := data["BTC"].(map[string]interface{})
+	quote := btcData["quote"].(map[string]interface{})["USD"].(map[string]interface{})
+
+	// Calculate moving average signal based on price momentum
+	percentChange24h := quote["percent_change_24h"].(float64)
+	signal := "Hold"
+	score := 0
+
+	if percentChange24h > 2.0 {
+		signal = "Buy"
+		score = 1
+	} else if percentChange24h < -2.0 {
+		signal = "Sell"
+		score = -1
+	}
+
+	// Get historical data (last 5 days)
+	historical := make([]float64, 5)
+	for i := range historical {
+		if percentChange24h > 0 {
+			historical[i] = 1
+		} else {
+			historical[i] = 0
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"value":        signal,
+		"indicator":    signal,
+		"score":        score,
+		"chart_data":   historical,
+		"chart_labels": []string{"5d", "4d", "3d", "2d", "Now"},
+	})
+}
+
+func handleFearGreed(c *gin.Context) {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "https://api.alternative.me/fng/", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":        "Failed to create request",
+			"value":        nil,
+			"indicator":    "Hold",
+			"score":        0,
+			"chart_data":   nil,
+			"chart_labels": nil,
+		})
+		return
+	}
+
+	q := req.URL.Query()
+	q.Add("limit", "5")
+	q.Add("format", "json")
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := client.Do(req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{
+			"error":        "Failed to fetch from Fear & Greed Index API",
+			"value":        nil,
+			"indicator":    "Hold",
+			"score":        0,
+			"chart_data":   nil,
+			"chart_labels": nil,
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Data []struct {
+			Value      string `json:"value"`
+			ValueClass string `json:"value_classification"`
+			Timestamp  string `json:"timestamp"`
+		} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":        "Failed to parse Fear & Greed Index response",
+			"value":        nil,
+			"indicator":    "Hold",
+			"score":        0,
+			"chart_data":   nil,
+			"chart_labels": nil,
+		})
+		return
+	}
+
+	if len(result.Data) == 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":        "No data received from Fear & Greed Index API",
+			"value":        nil,
+			"indicator":    "Hold",
+			"score":        0,
+			"chart_data":   nil,
+			"chart_labels": nil,
+		})
+		return
+	}
+
+	// Get current value
+	currentValue, err := strconv.Atoi(result.Data[0].Value)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":        "Failed to parse Fear & Greed Index value",
+			"value":        nil,
+			"indicator":    "Hold",
+			"score":        0,
+			"chart_data":   nil,
+			"chart_labels": nil,
+		})
+		return
+	}
+
+	// Get historical data
+	historical := make([]float64, len(result.Data))
+	labels := make([]string, len(result.Data))
+	for i, data := range result.Data {
+		value, _ := strconv.Atoi(data.Value)
+		historical[i] = float64(value)
+		// Convert timestamp to date
+		timestamp, _ := strconv.ParseInt(data.Timestamp, 10, 64)
+		date := time.Unix(timestamp, 0)
+		labels[i] = date.Format("Jan 02")
+	}
+
+	// Calculate indicator and score
+	var indicator string
+	var score float64
+	if currentValue <= 25 {
+		indicator = "Buy"
+		score = 1
+	} else if currentValue >= 75 {
+		indicator = "Sell"
+		score = -1
+	} else {
+		indicator = "Hold"
+		score = 0
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"value":        currentValue,
+		"indicator":    indicator,
+		"score":        score,
+		"chart_data":   historical,
+		"chart_labels": labels,
+	})
+}
+
+func handlePortfolio(c *gin.Context) {
+	if c.Request.Method != http.MethodGet {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+
+	binanceService := market.NewBinanceService()
+	portfolio, err := binanceService.GetPortfolio()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to get portfolio: %v", err)})
+		return
+	}
+
+	c.JSON(http.StatusOK, portfolio)
+}
+
 func main() {
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
@@ -1860,6 +1856,8 @@ func main() {
 		api.GET("/market-cap", handleMarketCap)
 		api.GET("/eth-btc-ratio", handleETHBTCRatio)
 		api.GET("/liquidation", handleLiquidation)
+		api.GET("/google-trends", handleGoogleTrends)
+		api.GET("/portfolio", handlePortfolio)
 	}
 
 	// Start server
