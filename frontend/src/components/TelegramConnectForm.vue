@@ -241,7 +241,7 @@ export default {
           throw new Error('Please enter a valid 5-digit code')
         }
 
-        const response = await fetch('http://localhost:8080/api/telegram/auth/verify', {
+        const response = await fetch('http://localhost:8080/api/telegram/verify-code', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

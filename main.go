@@ -241,6 +241,9 @@ func handleTelegramVerify2FA(c *gin.Context) {
 		return
 	}
 
+	// Add a small delay to ensure authentication state is established
+	time.Sleep(500 * time.Millisecond)
+
 	// Get the user ID from the service status (it's already stored after successful 2FA)
 	status := telegramService.GetStatus()
 	userID, ok := status["user_id"].(int64)
@@ -307,6 +310,19 @@ func handleGetCurrentUser(c *gin.Context) {
 func handleTelegramStatus(c *gin.Context) {
 	status := telegramService.GetStatus()
 	c.JSON(http.StatusOK, gin.H{"status": status})
+}
+
+func handleTelegramLogout(c *gin.Context) {
+	log.Printf("Received logout request")
+
+	// Clear all sessions and reset service state
+	telegramService.ClearSessions()
+
+	log.Printf("User logged out successfully")
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Logged out successfully",
+	})
 }
 
 func handleCMCGlobal(c *gin.Context) {
@@ -1830,6 +1846,7 @@ func main() {
 		api.POST("/telegram/verify-code", handleTelegramVerifyCode)
 		api.POST("/telegram/verify-2fa", handleTelegramVerify2FA)
 		api.GET("/telegram/status", handleTelegramStatus)
+		api.POST("/telegram/logout", handleTelegramLogout)
 		api.GET("/telegram/groups", handleGetGroups)
 		api.GET("/telegram/current-user", handleGetCurrentUser)
 

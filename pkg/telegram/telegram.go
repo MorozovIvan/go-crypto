@@ -154,12 +154,136 @@ func NewTelegramService() (*TelegramService, error) {
 	select {
 	case <-service.clientReady:
 		logger.Info("Telegram client initialized successfully")
+
+		// Check if we have an existing authenticated session
+		go service.checkExistingSession()
 	case <-time.After(10 * time.Second):
 		cancel() // Cancel the context if client doesn't initialize in time
 		return nil, fmt.Errorf("client initialization timeout")
 	}
 
 	return service, nil
+}
+
+// checkExistingSession checks if there's an existing authenticated session and restores the state
+func (s *TelegramService) checkExistingSession() {
+	s.logger.Info("Checking for existing authenticated session")
+
+	// Check if session file exists
+	if _, err := os.Stat("session.json"); os.IsNotExist(err) {
+		s.logger.Info("No session file found")
+		return
+	}
+
+	s.logger.Info("Session file found, but removing it to avoid connection issues")
+	s.logger.Info("User will need to authenticate fresh")
+
+	// Remove the session file to avoid potential connection issues
+	// This ensures we always start with a fresh authentication
+	if err := os.Remove("session.json"); err != nil {
+		s.logger.Warn("Failed to remove session file", zap.Error(err))
+	}
+}
+
+// ClearSessions clears all session data and resets the service state
+func (s *TelegramService) ClearSessions() {
+	s.logger.Info("Clearing all sessions and resetting service state")
+
+	// Reset service state
+	s.mu.Lock()
+	s.userAuth = false
+	s.userID = 0
+	s.sessions = make(map[string]*AuthSession)
+
+	// Cancel current context to stop the client
+	if s.cancel != nil {
+		s.cancel()
+	}
+	s.mu.Unlock()
+
+	// Remove session file
+	if err := os.Remove("session.json"); err != nil && !os.IsNotExist(err) {
+		s.logger.Warn("Failed to remove session file", zap.Error(err))
+	}
+
+	// Wait a moment for the client to fully close
+	time.Sleep(1 * time.Second)
+
+	// Reinitialize the service synchronously
+	s.reinitializeClient()
+
+	s.logger.Info("Sessions cleared successfully")
+}
+
+// reinitializeClient reinitializes the Telegram client after logout
+func (s *TelegramService) reinitializeClient() {
+	s.logger.Info("Reinitializing Telegram client after logout")
+
+	// Create new context
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Create new client ready channel
+	clientReady := make(chan struct{})
+
+	// Create new client
+	options := telegram.Options{
+		Logger: s.logger,
+		SessionStorage: &telegram.FileSessionStorage{
+			Path: "session.json",
+		},
+		Device: telegram.DeviceConfig{
+			DeviceModel:   "Desktop",
+			SystemVersion: "Windows 10",
+			AppVersion:    "1.0.0",
+			LangCode:      "en",
+		},
+	}
+
+	client, err := telegram.ClientFromEnvironment(options)
+	if err != nil {
+		s.logger.Error("Failed to create new Telegram client", zap.Error(err))
+		return
+	}
+
+	// Update service state with new client and context
+	s.mu.Lock()
+	s.ctx = ctx
+	s.cancel = cancel
+	s.client = client
+	s.clientReady = clientReady
+	s.mu.Unlock()
+
+	// Start the client in a separate goroutine
+	go func() {
+		s.logger.Info("Starting new Telegram client")
+		err := client.Run(ctx, func(ctx context.Context) error {
+			// Test the connection
+			api := client.API()
+			_, err := api.HelpGetNearestDC(ctx)
+			if err != nil {
+				s.logger.Error("Failed to connect to Telegram", zap.Error(err))
+				return fmt.Errorf("failed to connect to Telegram: %v", err)
+			}
+
+			close(clientReady)
+			s.logger.Info("New Telegram client is ready and connected")
+			<-ctx.Done()
+			return nil
+		})
+		if err != nil {
+			s.logger.Error("New client run error", zap.Error(err))
+		}
+	}()
+
+	// Wait for the client to be ready before returning
+	select {
+	case <-clientReady:
+		s.logger.Info("Client reinitialization completed successfully")
+		// Give the client a moment to fully stabilize
+		time.Sleep(1 * time.Second)
+	case <-time.After(15 * time.Second):
+		s.logger.Error("Client reinitialization timeout")
+	}
 }
 
 // GetPhone, SetPhone, SetCode, SetPassword now operate on the global s.phone, s.code, s.password
@@ -487,6 +611,9 @@ func (s *TelegramService) AuthenticateUser(phoneNumber string) error {
 		return fmt.Errorf("client not ready after timeout")
 	}
 
+	// Get the API client
+	api := s.client.API()
+
 	// Create a new context for this authentication attempt
 	authCtx, cancel := context.WithTimeout(s.ctx, 30*time.Second)
 	defer cancel()
@@ -502,8 +629,7 @@ func (s *TelegramService) AuthenticateUser(phoneNumber string) error {
 		zap.String("phone", phoneNumber),
 		zap.Int("api_id", apiID))
 
-	// Send code request using the API directly
-	api := s.client.API()
+	// Send code request using the API directly (reuse the api variable)
 	sentCode, err := api.AuthSendCode(authCtx, &tg.AuthSendCodeRequest{
 		PhoneNumber: phoneNumber,
 		APIID:       apiID,
@@ -1237,15 +1363,18 @@ func (s *TelegramService) GetCurrentUser() (map[string]interface{}, error) {
 
 func (s *TelegramService) GetStatus() map[string]interface{} {
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	authenticated := s.userAuth
+	userID := s.userID
+	s.mu.Unlock()
 
 	status := map[string]interface{}{
-		"authenticated": s.userAuth,
-		"user_id":       s.userID,
+		"authenticated": authenticated,
+		"user_id":       userID,
 	}
 
-	if s.userAuth {
+	if authenticated {
 		// Try to get current user info if authenticated
+		// Don't hold the lock while calling GetCurrentUser to avoid deadlock
 		user, err := s.GetCurrentUser()
 		if err == nil {
 			status["user"] = user

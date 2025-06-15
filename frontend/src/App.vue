@@ -13,6 +13,7 @@
             :user-id="userId"
             @connect="handleConnect"
             @2fa-required="handle2FARequired"
+            @logout="logout"
           />
         </div>
         <div v-else-if="currentView === 'market'">
@@ -93,41 +94,98 @@ export default {
       currentPhone: '',
     }
   },
+  async mounted() {
+    // Check authentication status on app startup
+    await this.checkAuthStatus()
+  },
   methods: {
+    async checkAuthStatus() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/telegram/status`)
+        const data = await response.json()
+        
+        if (data.status && data.status.authenticated && data.status.user_id) {
+          this.isConnected = true
+          this.userId = data.status.user_id
+          console.log('Restored authenticated session:', data.status)
+        } else {
+          this.isConnected = false
+          this.userId = null
+        }
+      } catch (error) {
+        console.error('Failed to check auth status:', error)
+        this.isConnected = false
+        this.userId = null
+      }
+    },
+    async logout() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/telegram/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        const data = await response.json()
+        if (data.success) {
+          this.isConnected = false
+          this.userId = null
+          console.log('Logged out successfully')
+          // Optionally refresh the page to reset all state
+          window.location.reload()
+        }
+      } catch (error) {
+        console.error('Logout failed:', error)
+      }
+    },
     handleConnect(userId) {
       this.isConnected = true
       this.userId = userId
     },
-    handle2FASubmit() {
+    async handle2FASubmit() {
       if (!this.twoFACode) {
         return;
       }
 
-      fetch(`${API_BASE_URL}/api/telegram/verify-2fa`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phone: this.currentPhone,
-          password: this.twoFACode,
-        }),
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            this.isConnected = true;
-            this.userId = data.user_id;
-            this.show2FAModal = false;
-            this.twoFACode = '';
-          } else {
-            alert(data.message || '2FA verification failed');
-          }
-        })
-        .catch(error => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+        const response = await fetch(`${API_BASE_URL}/api/telegram/verify-2fa`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            phone: this.currentPhone,
+            password: this.twoFACode,
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        const data = await response.json();
+
+        if (data.success) {
+          this.isConnected = true;
+          this.userId = data.user_id;
+          this.show2FAModal = false;
+          this.twoFACode = '';
+          console.log('2FA verification successful, refreshing page...');
+          // Refresh the page to ensure clean state
+          window.location.reload();
+        } else {
+          alert(data.message || '2FA verification failed');
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          alert('Request timed out. Please try again.');
+        } else {
           console.error('2FA verification error:', error);
           alert('Failed to verify 2FA code. Please try again.');
-        });
+        }
+      }
     },
     handle2FARequired(phone) {
       this.currentPhone = phone;

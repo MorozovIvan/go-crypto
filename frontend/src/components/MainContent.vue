@@ -7,7 +7,15 @@
       />
     </div>
     <div v-else>
-      <h2 class="text-2xl font-bold mb-4">Make me reach</h2>
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold">Make me reach</h2>
+        <button
+          @click="handleLogout"
+          class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+        >
+          Logout
+        </button>
+      </div>
       <p>Connected to Telegram. Analysis features coming soon...</p>
     </div>
   </main>
@@ -27,13 +35,16 @@ export default {
       default: false
     }
   },
-  emits: ['connect-telegram', '2fa-required'],
+  emits: ['connect', '2fa-required', 'logout'],
   methods: {
     handleConnected(userId) {
-      this.$emit('connect-telegram', userId)
+      this.$emit('connect', userId)
     },
     handle2FARequired(phone) {
       this.$emit('2fa-required', phone)
+    },
+    handleLogout() {
+      this.$emit('logout')
     }
   }
 }
