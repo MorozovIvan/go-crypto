@@ -37,4 +37,6 @@ yarn-error.log*
 session.json
 .backend.pid
 .frontend.pid
-.history/ 
+.history/
+telegram.log
+telegram_service.log

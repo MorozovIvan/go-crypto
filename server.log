@@ -1,0 +1,101 @@
+2025-06-15T20:29:36.150+0200	INFO	Initializing Telegram service	{"api_id": "26764638", "api_hash": "5cad...8f64"}
+2025-06-15T20:29:36.150+0200	INFO	conn.mtproto.rpc	Initialized	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "retry_interval": "5s", "max_retries": 5}
+2025-06-15T20:29:36.150+0200	INFO	Starting Telegram client
+2025-06-15T20:29:36.150+0200	INFO	Starting	{"v": "v0.120.0"}
+2025-06-15T20:29:36.150+0200	DEBUG	conn.mtproto	Run: start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-06-15T20:29:36.179+0200	INFO	conn.mtproto	Generating new auth key	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-06-15T20:29:36.179+0200	DEBUG	conn.mtproto	Initializing new key exchange	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "timeout": "1m0s", "context_deadline": "2025-06-15T20:30:11.150+0200"}
+2025-06-15T20:29:36.179+0200	DEBUG	conn.mtproto.exchange	Sending ReqPqMultiRequest	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-06-15T20:29:36.208+0200	DEBUG	conn.mtproto.exchange	Received server ResPQ	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-06-15T20:29:36.302+0200	DEBUG	conn.mtproto.exchange	PQ decomposing complete	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "took": "93.27925ms"}
+2025-06-15T20:29:36.302+0200	DEBUG	conn.mtproto.exchange	Sending ReqDHParamsRequest	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-06-15T20:29:36.842+0200	DEBUG	conn.mtproto.exchange	Received server ServerDHParams	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-06-15T20:29:37.202+0200	DEBUG	conn.mtproto.exchange	Sending SetClientDHParamsRequest	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-06-15T20:29:37.773+0200	DEBUG	conn.mtproto.exchange	Received server DhGen	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-06-15T20:29:37.773+0200	INFO	conn.mtproto	Auth key generated	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "duration": "1.594158667s"}
+2025-06-15T20:29:37.773+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "readLoop"}
+2025-06-15T20:29:37.773+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "pingLoop"}
+2025-06-15T20:29:37.773+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "saltsLoop"}
+2025-06-15T20:29:37.773+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "ackLoop"}
+2025-06-15T20:29:37.773+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "handleClose"}
+2025-06-15T20:29:37.773+0200	DEBUG	conn.mtproto.read	Read loop started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-06-15T20:29:37.773+0200	DEBUG	conn.mtproto.group	Task started	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback"}
+2025-06-15T20:29:37.774+0200	DEBUG	conn	Initializing	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-06-15T20:29:37.774+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7516245068590833392}
+2025-06-15T20:29:37.774+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7516245068590833392}
+2025-06-15T20:29:37.774+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7516245068590833392}
+2025-06-15T20:29:37.774+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7516245068590833392}
+2025-06-15T20:29:37.803+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x73f1f8dc", "type_name": "message_container", "size_bytes": 88, "msg_id": 7516245071352999945}
+2025-06-15T20:29:37.803+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x9ec20908", "type_name": "new_session_created#9ec20908", "size_bytes": 28, "msg_id": 7516245071352999945}
+2025-06-15T20:29:37.803+0200	DEBUG	conn.mtproto	Session created	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "unique_id": 5920706380481577070, "first_msg_id": 7516245068590833392, "first_msg_time": "2025-06-15T20:29:37.774+0200"}
+2025-06-15T20:29:37.803+0200	INFO	conn	SessionInit	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2}
+2025-06-15T20:29:37.803+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xb921bd04", "type_name": "get_future_salts#b921bd04", "msg_id": 7516245068620374392}
+2025-06-15T20:29:37.810+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 396, "msg_id": 7516245071384660993}
+2025-06-15T20:29:37.810+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x3072cfa1", "type_name": "gzip", "size_bytes": 384, "msg_id": 7516245068590833392}
+2025-06-15T20:29:37.810+0200	DEBUG	conn.mtproto	Decompressed	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xcc1a241e", "type_name": "config#cc1a241e", "size_bytes": 960, "msg_id": 7516245068590833392}
+2025-06-15T20:29:37.810+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7516245068590833392}
+2025-06-15T20:29:37.810+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7516245068590833392}
+2025-06-15T20:29:37.810+0200	DEBUG	conn.mtproto.group	Task complete	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "task": "userCallback", "elapsed": "36.286875ms"}
+2025-06-15T20:29:37.810+0200	DEBUG	Ready	{"v": "v0.120.0"}
+2025-06-15T20:29:37.810+0200	DEBUG	conn.mtproto	Invoke start	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7516245068627066392}
+2025-06-15T20:29:37.810+0200	DEBUG	conn.mtproto.rpc	Do called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7516245068627066392}
+2025-06-15T20:29:37.810+0200	DEBUG	conn.mtproto.rpc	Waiting for acknowledge	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "ack_id": 7516245068627066392}
+2025-06-15T20:29:37.810+0200	DEBUG	conn.mtproto	Request	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xbf9459b7", "type_name": "invokeWithoutUpdates#bf9459b7", "msg_id": 7516245068627066392}
+2025-06-15T20:29:37.810+0200	DEBUG	Data saved	{"v": "v0.120.0", "key_id": "c979e01ef1e95ac4"}
+2025-06-15T20:29:37.810+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x62d6b459", "type_name": "msgs_ack#62d6b459", "size_bytes": 20, "msg_id": 7516245071352999945}
+2025-06-15T20:29:37.810+0200	DEBUG	conn.mtproto	Received ack	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_ids": [7516245068590833392]}
+2025-06-15T20:29:37.810+0200	DEBUG	conn.mtproto.rpc	Acknowledge callback not set	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7516245068590833392}
+2025-06-15T20:29:37.832+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xae500895", "type_name": "future_salts#ae500895", "size_bytes": 84, "msg_id": 7516245071481259009}
+2025-06-15T20:29:37.832+0200	DEBUG	conn.mtproto	Got future salts	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "server_time": "2025-06-15T20:29:37.000+0200"}
+2025-06-15T20:29:37.852+0200	DEBUG	conn.mtproto	Handle message	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0xf35c6d01", "type_name": "rpc_result", "size_bytes": 28, "msg_id": 7516245071563570177}
+2025-06-15T20:29:37.852+0200	DEBUG	conn.mtproto	Handle result	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "type_id": "0x8e1a1775", "type_name": "nearestDc#8e1a1775", "size_bytes": 16, "msg_id": 7516245068627066392}
+2025-06-15T20:29:37.852+0200	DEBUG	conn.mtproto.rpc	Handler called	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7516245068627066392}
+2025-06-15T20:29:37.852+0200	DEBUG	conn.mtproto	Invoke end	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "msg_id": 7516245068627066392}
+2025-06-15T20:29:37.852+0200	DEBUG	conn	Invoke	{"v": "v0.120.0", "conn_id": 0, "dc_id": 2, "duration": "41.978875ms", "ongoing": 0}
+2025-06-15T20:29:37.852+0200	INFO	Telegram client is ready and connected
+2025-06-15T20:29:37.852+0200	INFO	Telegram client initialized successfully
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+2025-06-15T20:29:37.852+0200	INFO	Checking for existing authenticated session
+[GIN-debug] GET    /api/balance              --> main.handleBalance (4 handlers)
+[GIN-debug] GET    /api/telegram/auth/callback --> main.handleTelegramAuthCallback (4 handlers)
+[GIN-debug] GET    /api/telegram/phone       --> main.handleTelegramPhone (4 handlers)
+[GIN-debug] POST   /api/telegram/verify-code --> main.handleTelegramVerifyCode (4 handlers)
+2025-06-15T20:29:37.852+0200	INFO	Session file found, but removing it to avoid connection issues
+[GIN-debug] POST   /api/telegram/verify-2fa  --> main.handleTelegramVerify2FA (4 handlers)
+[GIN-debug] GET    /api/telegram/status      --> main.handleTelegramStatus (4 handlers)
+[GIN-debug] POST   /api/telegram/logout      --> main.handleTelegramLogout (4 handlers)
+[GIN-debug] GET    /api/telegram/groups      --> main.handleGetGroups (4 handlers)
+[GIN-debug] GET    /api/telegram/current-user --> main.handleGetCurrentUser (4 handlers)
+[GIN-debug] GET    /api/cmc/global           --> main.handleCMCGlobal (4 handlers)
+[GIN-debug] GET    /api/trends               --> main.handleTrends (4 handlers)
+[GIN-debug] GET    /api/ssr                  --> main.handleSSR (4 handlers)
+[GIN-debug] GET    /api/exchange-flows       --> main.handleExchangeFlows (4 handlers)
+[GIN-debug] GET    /api/active-addresses     --> main.handleActiveAddresses (4 handlers)
+[GIN-debug] GET    /api/whale-transactions   --> main.handleWhaleTransactions (4 handlers)
+[GIN-debug] GET    /api/funding-rate         --> main.handleFundingRate (4 handlers)
+2025-06-15T20:29:37.852+0200	INFO	User will need to authenticate fresh
+[GIN-debug] GET    /api/open-interest        --> main.handleOpenInterest (4 handlers)
+[GIN-debug] GET    /api/altcoin-season       --> main.handleAltcoinSeasonIndex (4 handlers)
+[GIN-debug] GET    /api/volume-trend         --> main.handleVolumeTrend (4 handlers)
+[GIN-debug] GET    /api/bollinger-bands      --> main.handleBollingerBands (4 handlers)
+[GIN-debug] GET    /api/rsi                  --> main.handleRSI (4 handlers)
+[GIN-debug] GET    /api/moving-averages      --> main.handleMovingAverages (4 handlers)
+[GIN-debug] GET    /api/fear-greed           --> main.handleFearGreed (4 handlers)
+[GIN-debug] GET    /api/btc-dominance        --> main.handleBTCDominance (4 handlers)
+[GIN-debug] GET    /api/market-cap           --> main.handleMarketCap (4 handlers)
+[GIN-debug] GET    /api/eth-btc-ratio        --> main.handleETHBTCRatio (4 handlers)
+[GIN-debug] GET    /api/liquidation          --> main.handleLiquidation (4 handlers)
+[GIN-debug] GET    /api/google-trends        --> main.handleGoogleTrends (4 handlers)
+[GIN-debug] GET    /api/portfolio            --> main.handlePortfolio (4 handlers)
+2025/06/15 20:29:37 Server starting on port 8080
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: address already in use
+2025/06/15 20:29:37 Failed to start server: listen tcp :8080: bind: address already in use
+exit status 1
