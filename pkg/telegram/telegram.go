@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/big"
@@ -175,14 +176,88 @@ func (s *TelegramService) checkExistingSession() {
 		return
 	}
 
-	s.logger.Info("Session file found, but removing it to avoid connection issues")
-	s.logger.Info("User will need to authenticate fresh")
+	s.logger.Info("Session file found, checking authentication status")
 
-	// Remove the session file to avoid potential connection issues
-	// This ensures we always start with a fresh authentication
-	if err := os.Remove("session.json"); err != nil {
-		s.logger.Warn("Failed to remove session file", zap.Error(err))
+	// Check if we have a persistent auth state file
+	authStateFile := "auth_state.json"
+	if authData, err := os.ReadFile(authStateFile); err == nil {
+		var authState struct {
+			UserAuth bool   `json:"user_auth"`
+			UserID   int64  `json:"user_id"`
+			Phone    string `json:"phone"`
+		}
+		if err := json.Unmarshal(authData, &authState); err == nil {
+			s.logger.Info("Found persistent auth state",
+				zap.Bool("user_auth", authState.UserAuth),
+				zap.Int64("user_id", authState.UserID),
+				zap.String("phone", authState.Phone))
+
+			// Restore authentication state
+			s.mu.Lock()
+			s.userAuth = authState.UserAuth
+			s.userID = authState.UserID
+			s.phone = authState.Phone
+			s.mu.Unlock()
+
+			// Verify the session is still valid by trying to get current user
+			if authState.UserAuth {
+				go func() {
+					// Wait for client to be ready
+					select {
+					case <-s.clientReady:
+						// Try to get current user to verify session is still valid
+						if _, err := s.GetCurrentUser(); err != nil {
+							s.logger.Warn("Session appears to be invalid, clearing auth state", zap.Error(err))
+							s.mu.Lock()
+							s.userAuth = false
+							s.userID = 0
+							s.mu.Unlock()
+							// Remove invalid auth state file
+							os.Remove(authStateFile)
+						} else {
+							s.logger.Info("Session restored successfully from persistent state")
+						}
+					case <-time.After(10 * time.Second):
+						s.logger.Warn("Client not ready for session validation")
+					}
+				}()
+			}
+			return
+		}
 	}
+
+	s.logger.Info("No valid persistent auth state found, user will need to authenticate")
+}
+
+// saveAuthState saves the current authentication state to a persistent file
+func (s *TelegramService) saveAuthState() {
+	s.mu.Lock()
+	authState := struct {
+		UserAuth bool   `json:"user_auth"`
+		UserID   int64  `json:"user_id"`
+		Phone    string `json:"phone"`
+	}{
+		UserAuth: s.userAuth,
+		UserID:   s.userID,
+		Phone:    s.phone,
+	}
+	s.mu.Unlock()
+
+	authData, err := json.Marshal(authState)
+	if err != nil {
+		s.logger.Error("Failed to marshal auth state", zap.Error(err))
+		return
+	}
+
+	if err := os.WriteFile("auth_state.json", authData, 0600); err != nil {
+		s.logger.Error("Failed to save auth state", zap.Error(err))
+		return
+	}
+
+	s.logger.Info("Authentication state saved successfully",
+		zap.Bool("user_auth", authState.UserAuth),
+		zap.Int64("user_id", authState.UserID),
+		zap.String("phone", authState.Phone))
 }
 
 // ClearSessions clears all session data and resets the service state
@@ -204,6 +279,11 @@ func (s *TelegramService) ClearSessions() {
 	// Remove session file
 	if err := os.Remove("session.json"); err != nil && !os.IsNotExist(err) {
 		s.logger.Warn("Failed to remove session file", zap.Error(err))
+	}
+
+	// Remove auth state file
+	if err := os.Remove("auth_state.json"); err != nil && !os.IsNotExist(err) {
+		s.logger.Warn("Failed to remove auth state file", zap.Error(err))
 	}
 
 	// Wait a moment for the client to fully close
@@ -335,104 +415,141 @@ func (s *TelegramService) GetUserGroups(userID int64) ([]map[string]interface{},
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Use the existing client if available
-	client := s.client
-	if client == nil {
-		var err error
-		client, err = telegram.ClientFromEnvironment(telegram.Options{
-			Logger: s.logger,
-			SessionStorage: &telegram.FileSessionStorage{
-				Path: "session.json",
-			},
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to create client: %v", err)
-		}
+	s.logger.Info("GetUserGroups called", zap.Int64("userID", userID))
+
+	// Use the existing authenticated client instead of creating a new one
+	if s.client == nil {
+		s.logger.Error("No authenticated client available")
+		return nil, fmt.Errorf("no authenticated client available")
 	}
 
 	var result []map[string]interface{}
 
 	// Create a new context for this operation
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(s.ctx, 30*time.Second)
 	defer cancel()
 
-	err := client.Run(ctx, func(ctx context.Context) error {
-		api := client.API()
+	// Use the existing client API directly instead of calling Run()
+	api := s.client.API()
 
-		// First, check if we're authorized
-		_, err := api.AuthExportAuthorization(ctx, 2) // Use DC ID 2 (default)
-		if err != nil {
-			if strings.Contains(err.Error(), "AUTH_KEY_UNREGISTERED") {
-				// Clear the session file if authentication is invalid
-				os.Remove("session.json")
-				s.client = nil // Clear the client
-				return fmt.Errorf("session expired, please re-authenticate")
-			}
-			return fmt.Errorf("failed to check authorization: %v", err)
-		}
+	s.logger.Info("Attempting to get dialogs from Telegram API")
 
-		// Get all dialogs (chats and channels)
-		dialogs, err := api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
-			OffsetPeer: &tg.InputPeerEmpty{},
-			Limit:      100,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to get dialogs: %v", err)
-		}
-
-		switch d := dialogs.(type) {
-		case *tg.MessagesDialogs:
-			for _, chat := range d.Chats {
-				switch c := chat.(type) {
-				case *tg.Channel:
-					// Get channel full info
-					channelFull, err := api.ChannelsGetFullChannel(ctx, &tg.InputChannel{
-						ChannelID:  c.ID,
-						AccessHash: c.AccessHash,
-					})
-					if err != nil {
-						s.logger.Warn("Failed to get channel full info", zap.Error(err))
-						continue
-					}
-
-					var description string
-					if full, ok := channelFull.FullChat.(*tg.ChannelFull); ok {
-						description = full.About
-					}
-
-					result = append(result, map[string]interface{}{
-						"id":          c.ID,
-						"title":       c.Title,
-						"username":    c.Username,
-						"type":        "channel",
-						"members":     c.ParticipantsCount,
-						"description": description,
-					})
-				case *tg.Chat:
-					result = append(result, map[string]interface{}{
-						"id":          c.ID,
-						"title":       c.Title,
-						"type":        "group",
-						"members":     c.ParticipantsCount,
-						"description": "",
-					})
-				}
-			}
-		}
-
-		return nil
+	// First, check if we're authorized by trying to get dialogs
+	dialogs, err := api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
+		OffsetPeer: &tg.InputPeerEmpty{},
+		Limit:      100,
 	})
-
 	if err != nil {
+		s.logger.Error("Failed to get dialogs", zap.Error(err))
 		if strings.Contains(err.Error(), "AUTH_KEY_UNREGISTERED") {
 			// Clear the session file if authentication is invalid
 			os.Remove("session.json")
 			s.client = nil // Clear the client
 			return nil, fmt.Errorf("session expired, please re-authenticate")
 		}
-		return nil, fmt.Errorf("failed to run client: %v", err)
+		return nil, fmt.Errorf("failed to get dialogs: %v", err)
 	}
 
+	s.logger.Info("Successfully got dialogs", zap.String("type", fmt.Sprintf("%T", dialogs)))
+
+	switch d := dialogs.(type) {
+	case *tg.MessagesDialogs:
+		s.logger.Info("Processing MessagesDialogs", zap.Int("chat_count", len(d.Chats)))
+		for i, chat := range d.Chats {
+			s.logger.Info("Processing chat", zap.Int("index", i), zap.String("type", fmt.Sprintf("%T", chat)))
+			switch c := chat.(type) {
+			case *tg.Channel:
+				s.logger.Info("Found channel", zap.Int64("id", c.ID), zap.String("title", c.Title))
+
+				// Get channel full info
+				channelFull, err := api.ChannelsGetFullChannel(ctx, &tg.InputChannel{
+					ChannelID:  c.ID,
+					AccessHash: c.AccessHash,
+				})
+				if err != nil {
+					s.logger.Warn("Failed to get channel full info", zap.Error(err))
+					// Continue without full info
+				}
+
+				var description string
+				if channelFull != nil {
+					if full, ok := channelFull.FullChat.(*tg.ChannelFull); ok {
+						description = full.About
+					}
+				}
+
+				result = append(result, map[string]interface{}{
+					"id":          c.ID,
+					"title":       c.Title,
+					"username":    c.Username,
+					"type":        "channel",
+					"members":     c.ParticipantsCount,
+					"description": description,
+				})
+			case *tg.Chat:
+				s.logger.Info("Found chat", zap.Int64("id", c.ID), zap.String("title", c.Title))
+				result = append(result, map[string]interface{}{
+					"id":          c.ID,
+					"title":       c.Title,
+					"type":        "group",
+					"members":     c.ParticipantsCount,
+					"description": "",
+				})
+			default:
+				s.logger.Info("Skipping unknown chat type", zap.String("type", fmt.Sprintf("%T", chat)))
+			}
+		}
+	case *tg.MessagesDialogsSlice:
+		s.logger.Info("Processing MessagesDialogsSlice", zap.Int("chat_count", len(d.Chats)))
+		for i, chat := range d.Chats {
+			s.logger.Info("Processing chat", zap.Int("index", i), zap.String("type", fmt.Sprintf("%T", chat)))
+			switch c := chat.(type) {
+			case *tg.Channel:
+				s.logger.Info("Found channel", zap.Int64("id", c.ID), zap.String("title", c.Title))
+
+				// Get channel full info
+				channelFull, err := api.ChannelsGetFullChannel(ctx, &tg.InputChannel{
+					ChannelID:  c.ID,
+					AccessHash: c.AccessHash,
+				})
+				if err != nil {
+					s.logger.Warn("Failed to get channel full info", zap.Error(err))
+					// Continue without full info
+				}
+
+				var description string
+				if channelFull != nil {
+					if full, ok := channelFull.FullChat.(*tg.ChannelFull); ok {
+						description = full.About
+					}
+				}
+
+				result = append(result, map[string]interface{}{
+					"id":          c.ID,
+					"title":       c.Title,
+					"username":    c.Username,
+					"type":        "channel",
+					"members":     c.ParticipantsCount,
+					"description": description,
+				})
+			case *tg.Chat:
+				s.logger.Info("Found chat", zap.Int64("id", c.ID), zap.String("title", c.Title))
+				result = append(result, map[string]interface{}{
+					"id":          c.ID,
+					"title":       c.Title,
+					"type":        "group",
+					"members":     c.ParticipantsCount,
+					"description": "",
+				})
+			default:
+				s.logger.Info("Skipping unknown chat type", zap.String("type", fmt.Sprintf("%T", chat)))
+			}
+		}
+	default:
+		s.logger.Warn("Unexpected dialogs type", zap.String("type", fmt.Sprintf("%T", dialogs)))
+	}
+
+	s.logger.Info("Successfully retrieved user groups", zap.Int("count", len(result)))
 	return result, nil
 }
 
@@ -806,8 +923,42 @@ func (s *TelegramService) VerifyCode(phoneForVerify, code string) error {
 			done <- s.formatError(err) // Format other errors
 			return
 		}
-		if auth == nil { /* ... */
+		if auth == nil {
+			s.logger.Error("AuthSignIn returned nil auth result")
+			done <- fmt.Errorf("authentication failed: nil result")
+			return
 		}
+
+		// Handle successful authentication
+		if authUser, ok := auth.(*tg.AuthAuthorization); ok {
+			if user, ok := authUser.User.(*tg.User); ok {
+				s.mu.Lock()
+				s.userID = user.ID
+				s.userAuth = true
+				s.phone = phoneForVerify
+				s.mu.Unlock()
+
+				// Save authentication state persistently
+				s.saveAuthState()
+
+				s.logger.Info("Successfully authenticated with code",
+					zap.Int64("userID", user.ID),
+					zap.String("username", user.Username),
+					zap.String("firstName", user.FirstName),
+					zap.String("lastName", user.LastName),
+					zap.String("phone", phoneForVerify),
+				)
+			} else {
+				s.logger.Error("Unexpected user type in auth result", zap.String("type", fmt.Sprintf("%T", authUser.User)))
+				done <- fmt.Errorf("unexpected user type in auth result")
+				return
+			}
+		} else {
+			s.logger.Error("Unexpected auth result type", zap.String("type", fmt.Sprintf("%T", auth)))
+			done <- fmt.Errorf("unexpected auth result type")
+			return
+		}
+
 		done <- nil // Success
 	}()
 
@@ -1044,12 +1195,18 @@ func (s *TelegramService) Verify2FA(phoneForVerify, password string) error {
 				s.mu.Lock()
 				s.userID = user.ID
 				s.userAuth = true
+				s.phone = phoneForVerify
 				s.mu.Unlock()
-				s.logger.Info("Successfully authenticated and got user ID",
+
+				// Save authentication state persistently
+				s.saveAuthState()
+
+				s.logger.Info("Successfully authenticated with 2FA",
 					zap.Int64("userID", user.ID),
 					zap.String("username", user.Username),
 					zap.String("firstName", user.FirstName),
 					zap.String("lastName", user.LastName),
+					zap.String("phone", phoneForVerify),
 				)
 			} else {
 				s.logger.Error("Unexpected user type in auth result", zap.String("type", fmt.Sprintf("%T", authUser.User)))
@@ -1315,48 +1472,46 @@ func (s *TelegramService) GetCurrentUser() (map[string]interface{}, error) {
 		return nil, fmt.Errorf("no authenticated client available")
 	}
 
-	var user map[string]interface{}
-
 	// Create a new context for this operation
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(s.ctx, 5*time.Second)
 	defer cancel()
 
-	err := s.client.Run(ctx, func(ctx context.Context) error {
-		api := s.client.API()
-
-		// Get current user info directly without checking authorization
-		me, err := api.UsersGetUsers(ctx, []tg.InputUserClass{&tg.InputUserSelf{}})
-		if err != nil {
-			return fmt.Errorf("failed to get current user: %v", err)
-		}
-
-		if len(me) == 0 {
-			return fmt.Errorf("no user data returned")
-		}
-
-		userObj, ok := me[0].(*tg.User)
-		if !ok {
-			return fmt.Errorf("unexpected user type")
-		}
-
-		user = map[string]interface{}{
-			"id":         userObj.ID,
-			"username":   userObj.Username,
-			"first_name": userObj.FirstName,
-			"last_name":  userObj.LastName,
-		}
-
-		return nil
-	})
+	// Use the existing client API directly instead of calling Run()
+	api := s.client.API()
+	me, err := api.UsersGetUsers(ctx, []tg.InputUserClass{&tg.InputUserSelf{}})
 
 	if err != nil {
+		s.logger.Warn("Failed to get current user", zap.Error(err))
 		if strings.Contains(err.Error(), "AUTH_KEY_UNREGISTERED") {
 			// Clear the session file if authentication is invalid
 			os.Remove("session.json")
 			return nil, fmt.Errorf("session expired, please re-authenticate")
 		}
-		return nil, fmt.Errorf("failed to run client: %v", err)
+		return nil, fmt.Errorf("failed to get current user: %v", err)
 	}
+
+	if len(me) == 0 {
+		return nil, fmt.Errorf("no user data returned")
+	}
+
+	userObj, ok := me[0].(*tg.User)
+	if !ok {
+		return nil, fmt.Errorf("unexpected user type")
+	}
+
+	user := map[string]interface{}{
+		"id":         userObj.ID,
+		"username":   userObj.Username,
+		"first_name": userObj.FirstName,
+		"last_name":  userObj.LastName,
+	}
+
+	s.logger.Info("Successfully retrieved current user info",
+		zap.Int64("user_id", userObj.ID),
+		zap.String("username", userObj.Username),
+		zap.String("first_name", userObj.FirstName),
+		zap.String("last_name", userObj.LastName),
+	)
 
 	return user, nil
 }
