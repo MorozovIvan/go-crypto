@@ -298,13 +298,140 @@ export default defineComponent({
           chartLabels: [],
           error: false,
           loading: true
+        },
+        // Advanced DeFi & Crypto Metrics
+        {
+          key: 'defi-tvl',
+          title: 'DeFi TVL',
+          value: null,
+          indicator: 'Hold',
+          score: 0,
+          weight: 0.08,
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
+        },
+        {
+          key: 'social-sentiment',
+          title: 'Social Sentiment',
+          value: null,
+          indicator: 'Hold',
+          score: 0,
+          weight: 0.06,
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
+        },
+        {
+          key: 'options-flow',
+          title: 'Options Flow (Put/Call)',
+          value: null,
+          indicator: 'Hold',
+          score: 0,
+          weight: 0.05,
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
+        },
+        {
+          key: 'stablecoin-flows',
+          title: 'Stablecoin Flows',
+          value: null,
+          indicator: 'Hold',
+          score: 0,
+          weight: 0.07,
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
+        },
+        {
+          key: 'network-health',
+          title: 'Network Health',
+          value: null,
+          indicator: 'Hold',
+          score: 0,
+          weight: 0.04,
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
+        },
+        {
+          key: 'institutional-flows',
+          title: 'Institutional Flows',
+          value: null,
+          indicator: 'Hold',
+          score: 0,
+          weight: 0.09,
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
+        },
+        {
+          key: 'yield-curves',
+          title: 'DeFi Yield Premium',
+          value: null,
+          indicator: 'Hold',
+          score: 0,
+          weight: 0.03,
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
+        },
+        {
+          key: 'correlation-matrix',
+          title: 'BTC-Stock Correlation',
+          value: null,
+          indicator: 'Hold',
+          score: 0,
+          weight: 0.05,
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
+        },
+        {
+          key: 'volatility-surface',
+          title: 'Implied Volatility',
+          value: null,
+          indicator: 'Hold',
+          score: 0,
+          weight: 0.04,
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
+        },
+        {
+          key: 'liquidation-heatmap',
+          title: 'Liquidation Risk',
+          value: null,
+          indicator: 'Hold',
+          score: 0,
+          weight: 0.06,
+          chartData: [],
+          chartLabels: [],
+          error: false,
+          loading: true
         }
       ],
       totalScore: 0,
       signal: 'Hold',
       asset: null,
       error: null,
-      confidence: 'Low'
+      confidence: 'Low',
+      websocket: null,
+      wsConnected: false,
+      wsReconnectAttempts: 0,
+      maxReconnectAttempts: 5,
+      reconnectInterval: 5000,
+      lastUpdateTime: null
     };
   },
   created() {
@@ -322,35 +449,18 @@ export default defineComponent({
     // Initial fetch
     this.fetchAllMetrics()
     
-    // Set up different refresh intervals for different metric types
-    console.log('[mounted] Setting up refresh intervals')
+    // Initialize WebSocket connection
+    this.initWebSocket()
     
-    // Critical metrics - refresh every 2 minutes
-    const criticalMetrics = ['fear-greed', 'btc-dominance', 'rsi', 'moving-averages'];
-    setInterval(() => {
-      console.log('[refresh-critical] Refreshing critical metrics...')
-      criticalMetrics.forEach(key => this.fetchMetric(key))
-    }, 2 * 60 * 1000)
-    
-    // Standard metrics - refresh every 5 minutes
-    const standardMetrics = ['market-cap', 'volume-trend', 'altcoin-season', 'exchange-flows'];
-    setInterval(() => {
-      console.log('[refresh-standard] Refreshing standard metrics...')
-      standardMetrics.forEach(key => this.fetchMetric(key))
-    }, 5 * 60 * 1000)
-    
-    // Slow metrics - refresh every 10 minutes
-    const slowMetrics = ['google-trends', 'ssr', 'active-addresses', 'whale-transactions'];
-    setInterval(() => {
-      console.log('[refresh-slow] Refreshing slow metrics...')
-      slowMetrics.forEach(key => this.fetchMetric(key))
-    }, 10 * 60 * 1000)
+    // Fallback polling for non-critical metrics (reduced frequency)
+    this.setupFallbackPolling()
     
     // Performance monitoring
     this.startPerformanceMonitoring()
   },
   beforeUnmount() {
     console.log('MarketAnalysis: beforeUnmount() hook called');
+    this.closeWebSocket()
   },
   computed: {
     signalClass() {
@@ -824,7 +934,7 @@ export default defineComponent({
         
         if (staleMetrics.length > 0) {
           console.warn('[performance] Stale metrics detected:', staleMetrics.map(m => m.key))
-          // Optionally trigger refresh of stale metrics
+          // Trigger refresh of stale metrics
           staleMetrics.forEach(m => this.fetchMetric(m.key))
         }
         
@@ -833,12 +943,25 @@ export default defineComponent({
           console.warn('[performance] Metrics with errors:', errorMetrics.map(m => m.key))
         }
         
+        // WebSocket health check
+        const wsHealthy = this.wsConnected && this.lastUpdateTime && 
+                         (now - this.lastUpdateTime) < 2 * 60 * 1000 // Last update within 2 minutes
+        
         console.log('[performance] System status:', {
           totalMetrics: this.metrics.length,
           errorCount: errorMetrics.length,
           staleCount: staleMetrics.length,
-          lastSignalUpdate: this.totalScore
+          wsConnected: this.wsConnected,
+          wsHealthy: wsHealthy,
+          lastSignalUpdate: this.totalScore,
+          lastWSUpdate: this.lastUpdateTime
         })
+        
+        // Reconnect WebSocket if unhealthy
+        if (!wsHealthy && this.wsReconnectAttempts < this.maxReconnectAttempts) {
+          console.warn('[performance] WebSocket appears unhealthy, attempting reconnect')
+          this.initWebSocket()
+        }
       }, 5 * 60 * 1000) // Check every 5 minutes
     },
     getRSIIndicator(value) {
@@ -948,7 +1071,127 @@ export default defineComponent({
         this.metrics[idx].loading = false;
         this.calculateSignal();
       }
-    }
+    },
+    initWebSocket() {
+      if (this.websocket) {
+        this.closeWebSocket()
+      }
+      
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const wsUrl = `${protocol}//${window.location.host}/api/ws`
+      
+      console.log('[WebSocket] Connecting to:', wsUrl)
+      
+      try {
+        this.websocket = new WebSocket(wsUrl)
+        
+        this.websocket.onopen = this.onWebSocketOpen
+        this.websocket.onmessage = this.onWebSocketMessage
+        this.websocket.onclose = this.onWebSocketClose
+        this.websocket.onerror = this.onWebSocketError
+        
+      } catch (error) {
+        console.error('[WebSocket] Connection failed:', error)
+        this.scheduleReconnect()
+      }
+    },
+    
+    onWebSocketOpen(event) {
+      console.log('[WebSocket] Connected successfully')
+      this.wsConnected = true
+      this.wsReconnectAttempts = 0
+      this.lastUpdateTime = new Date()
+    },
+    
+    onWebSocketMessage(event) {
+      try {
+        const message = JSON.parse(event.data)
+        console.log('[WebSocket] Received message:', message)
+        
+        if (message.type === 'market_update') {
+          this.updateMetricFromWebSocket(message)
+        }
+        
+        this.lastUpdateTime = new Date()
+        
+      } catch (error) {
+        console.error('[WebSocket] Failed to parse message:', error)
+      }
+    },
+    
+    onWebSocketClose(event) {
+      console.log('[WebSocket] Connection closed:', event.code, event.reason)
+      this.wsConnected = false
+      
+      if (event.code !== 1000) { // Not a normal closure
+        this.scheduleReconnect()
+      }
+    },
+    
+    onWebSocketError(error) {
+      console.error('[WebSocket] Error:', error)
+      this.wsConnected = false
+    },
+    
+    scheduleReconnect() {
+      if (this.wsReconnectAttempts >= this.maxReconnectAttempts) {
+        console.error('[WebSocket] Max reconnection attempts reached')
+        return
+      }
+      
+      this.wsReconnectAttempts++
+      const delay = this.reconnectInterval * Math.pow(2, this.wsReconnectAttempts - 1)
+      
+      console.log(`[WebSocket] Scheduling reconnect attempt ${this.wsReconnectAttempts} in ${delay}ms`)
+      
+      setTimeout(() => {
+        if (!this.wsConnected) {
+          this.initWebSocket()
+        }
+      }, delay)
+    },
+    
+    closeWebSocket() {
+      if (this.websocket) {
+        this.websocket.close(1000, 'Component unmounting')
+        this.websocket = null
+        this.wsConnected = false
+      }
+    },
+    
+    updateMetricFromWebSocket(message) {
+      const idx = this.metrics.findIndex(m => m.key === message.metric)
+      if (idx === -1) return
+      
+      console.log(`[WebSocket] Updating ${message.metric}:`, message)
+      
+      this.metrics[idx].value = message.value
+      this.metrics[idx].indicator = message.indicator
+      this.metrics[idx].score = message.score
+      this.metrics[idx].chartData = message.chart_data || []
+      this.metrics[idx].loading = false
+      this.metrics[idx].error = false
+      this.metrics[idx].lastUpdated = message.timestamp
+      
+      // Recalculate signal after WebSocket update
+      this.calculateSignal()
+    },
+    
+    setupFallbackPolling() {
+      // Reduced frequency polling for non-critical metrics only
+      const nonCriticalMetrics = ['google-trends', 'whale-transactions', 'bollinger-bands']
+      
+      setInterval(() => {
+        if (!this.wsConnected) {
+          console.log('[Fallback] WebSocket disconnected, using polling for critical metrics')
+          const criticalMetrics = ['fear-greed', 'btc-dominance', 'rsi', 'moving-averages']
+          criticalMetrics.forEach(key => this.fetchMetric(key))
+        }
+        
+        // Always poll non-critical metrics (they're not sent via WebSocket)
+        nonCriticalMetrics.forEach(key => this.fetchMetric(key))
+      }, 2 * 60 * 1000) // Every 2 minutes
+    },
   }
 });
 </script>

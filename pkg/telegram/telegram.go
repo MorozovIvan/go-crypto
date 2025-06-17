@@ -182,15 +182,28 @@ func (s *TelegramService) checkExistingSession() {
 	authStateFile := "auth_state.json"
 	if authData, err := os.ReadFile(authStateFile); err == nil {
 		var authState struct {
-			UserAuth bool   `json:"user_auth"`
-			UserID   int64  `json:"user_id"`
-			Phone    string `json:"phone"`
+			UserAuth bool      `json:"user_auth"`
+			UserID   int64     `json:"user_id"`
+			Phone    string    `json:"phone"`
+			SavedAt  time.Time `json:"saved_at"`
+			Version  string    `json:"version"`
 		}
 		if err := json.Unmarshal(authData, &authState); err == nil {
+			// Check if the auth state is too old (older than 7 days)
+			if !authState.SavedAt.IsZero() && time.Since(authState.SavedAt) > 7*24*time.Hour {
+				s.logger.Warn("Auth state is too old, ignoring",
+					zap.Time("saved_at", authState.SavedAt),
+					zap.Duration("age", time.Since(authState.SavedAt)))
+				os.Remove(authStateFile)
+				return
+			}
+
 			s.logger.Info("Found persistent auth state",
 				zap.Bool("user_auth", authState.UserAuth),
 				zap.Int64("user_id", authState.UserID),
-				zap.String("phone", authState.Phone))
+				zap.String("phone", authState.Phone),
+				zap.Time("saved_at", authState.SavedAt),
+				zap.String("version", authState.Version))
 
 			// Restore authentication state
 			s.mu.Lock()
@@ -205,20 +218,21 @@ func (s *TelegramService) checkExistingSession() {
 					// Wait for client to be ready
 					select {
 					case <-s.clientReady:
+						// Give the client some time to fully initialize
+						time.Sleep(2 * time.Second)
+
 						// Try to get current user to verify session is still valid
-						if _, err := s.GetCurrentUser(); err != nil {
-							s.logger.Warn("Session appears to be invalid, clearing auth state", zap.Error(err))
-							s.mu.Lock()
-							s.userAuth = false
-							s.userID = 0
-							s.mu.Unlock()
-							// Remove invalid auth state file
-							os.Remove(authStateFile)
+						if user, err := s.GetCurrentUser(); err == nil {
+							s.logger.Info("Session restored successfully from persistent state",
+								zap.Any("user", user))
 						} else {
-							s.logger.Info("Session restored successfully from persistent state")
+							s.logger.Warn("Session validation failed, but keeping auth state for retry",
+								zap.Error(err))
+							// Don't immediately clear auth state - it might be a temporary network issue
+							// The GetCurrentUser method will handle clearing auth state if needed
 						}
-					case <-time.After(10 * time.Second):
-						s.logger.Warn("Client not ready for session validation")
+					case <-time.After(15 * time.Second):
+						s.logger.Warn("Client not ready for session validation timeout")
 					}
 				}()
 			}
@@ -229,17 +243,62 @@ func (s *TelegramService) checkExistingSession() {
 	s.logger.Info("No valid persistent auth state found, user will need to authenticate")
 }
 
+// attemptSessionRecovery attempts to recover a session by recreating the client
+func (s *TelegramService) attemptSessionRecovery() error {
+	s.logger.Info("Attempting session recovery")
+
+	// Check if session file exists
+	if _, err := os.Stat("session.json"); os.IsNotExist(err) {
+		return fmt.Errorf("no session file to recover from")
+	}
+
+	// Try to reinitialize the client to reload the session
+	s.mu.Lock()
+	if s.cancel != nil {
+		s.cancel()
+	}
+	s.mu.Unlock()
+
+	// Wait for current client to close
+	time.Sleep(2 * time.Second)
+
+	// Reinitialize client
+	s.reinitializeClient()
+
+	// Wait for client to be ready
+	select {
+	case <-s.clientReady:
+		s.logger.Info("Client reinitialized for session recovery")
+
+		// Test the recovered session
+		if user, err := s.GetCurrentUser(); err == nil {
+			s.logger.Info("Session recovery successful", zap.Any("user", user))
+			return nil
+		} else {
+			s.logger.Warn("Session recovery failed", zap.Error(err))
+			return err
+		}
+	case <-time.After(20 * time.Second):
+		s.logger.Error("Session recovery timeout")
+		return fmt.Errorf("session recovery timeout")
+	}
+}
+
 // saveAuthState saves the current authentication state to a persistent file
 func (s *TelegramService) saveAuthState() {
 	s.mu.Lock()
 	authState := struct {
-		UserAuth bool   `json:"user_auth"`
-		UserID   int64  `json:"user_id"`
-		Phone    string `json:"phone"`
+		UserAuth bool      `json:"user_auth"`
+		UserID   int64     `json:"user_id"`
+		Phone    string    `json:"phone"`
+		SavedAt  time.Time `json:"saved_at"`
+		Version  string    `json:"version"`
 	}{
 		UserAuth: s.userAuth,
 		UserID:   s.userID,
 		Phone:    s.phone,
+		SavedAt:  time.Now(),
+		Version:  "1.0",
 	}
 	s.mu.Unlock()
 
@@ -1483,8 +1542,36 @@ func (s *TelegramService) GetCurrentUser() (map[string]interface{}, error) {
 	if err != nil {
 		s.logger.Warn("Failed to get current user", zap.Error(err))
 		if strings.Contains(err.Error(), "AUTH_KEY_UNREGISTERED") {
-			// Clear the session file if authentication is invalid
-			os.Remove("session.json")
+			s.logger.Warn("AUTH_KEY_UNREGISTERED error, attempting session recovery", zap.Error(err))
+
+			// Try session recovery once
+			if recoveryErr := s.attemptSessionRecovery(); recoveryErr == nil {
+				// Retry getting current user after recovery
+				api := s.client.API()
+				if me, retryErr := api.UsersGetUsers(ctx, []tg.InputUserClass{&tg.InputUserSelf{}}); retryErr == nil && len(me) > 0 {
+					if userObj, ok := me[0].(*tg.User); ok {
+						user := map[string]interface{}{
+							"id":         userObj.ID,
+							"username":   userObj.Username,
+							"first_name": userObj.FirstName,
+							"last_name":  userObj.LastName,
+						}
+						s.logger.Info("Session recovery successful, retrieved user info",
+							zap.Int64("user_id", userObj.ID))
+						return user, nil
+					}
+				}
+			}
+
+			// If recovery failed, clear the authentication state
+			s.mu.Lock()
+			s.userAuth = false
+			s.userID = 0
+			s.mu.Unlock()
+
+			// Remove the auth state file
+			os.Remove("auth_state.json")
+			s.logger.Warn("Session recovery failed, clearing auth state", zap.Error(err))
 			return nil, fmt.Errorf("session expired, please re-authenticate")
 		}
 		return nil, fmt.Errorf("failed to get current user: %v", err)
