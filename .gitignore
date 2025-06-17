@@ -35,6 +35,7 @@ yarn-error.log*
 
 # Project specific
 session.json
+auth_state.json
 .backend.pid
 .frontend.pid
 .history/
