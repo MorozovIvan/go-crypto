@@ -25,6 +25,12 @@
         <div v-else-if="currentView === 'portfolio'">
           <Portfolio />
         </div>
+        <div v-else-if="currentView === 'arbitration'">
+          <ArbitrationDashboard />
+        </div>
+        <div v-else-if="currentView === 'sniping'">
+          <SnipingDashboard />
+        </div>
       </main>
     </div>
     <AppFooter />
@@ -69,6 +75,8 @@ import MainContent from './components/MainContent.vue'
 import MarketAnalysis from './components/MarketAnalysis.vue'
 import ProfitableSolanaWallets from './components/ProfitableSolanaWallets.vue'
 import Portfolio from './components/Portfolio.vue'
+import ArbitrationDashboard from './components/ArbitrationDashboard.vue'
+import SnipingDashboard from './components/SnipingDashboard.vue'
 
 const API_BASE_URL = 'http://localhost:8080'
 
@@ -81,7 +89,9 @@ export default {
     MainContent,
     MarketAnalysis,
     ProfitableSolanaWallets,
-    Portfolio
+    Portfolio,
+    ArbitrationDashboard,
+    SnipingDashboard
   },
   data() {
     return {

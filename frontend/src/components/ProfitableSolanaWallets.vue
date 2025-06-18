@@ -1,41 +1,41 @@
 <template>
   <div class="p-8">
-    <h2 class="text-2xl font-bold mb-4">Find Profitable Solana Wallets</h2>
+    <h2 class="mb-4 text-2xl font-bold">Find Profitable Solana Wallets</h2>
     <!-- Filters Bar -->
-    <div class="mb-4 flex flex-wrap gap-4 items-end">
+    <div class="flex flex-wrap items-end gap-4 mb-4">
       <div>
-        <label class="block text-xs font-semibold mb-1">Winrate</label>
+        <label class="block mb-1 text-xs font-semibold">Winrate</label>
         <div class="flex items-center gap-2">
           <input type="range" min="0" max="100" v-model.number="filters.winrate" class="w-32" />
           <span class="text-sm">{{ filters.winrate }}%</span>
         </div>
       </div>
       <div>
-        <label class="block text-xs font-semibold mb-1">Profit (Min)</label>
+        <label class="block mb-1 text-xs font-semibold">Profit (Min)</label>
         <input type="number" v-model.number="filters.profitMin" class="w-24 px-2 py-1 border rounded" placeholder="Min" />
       </div>
       <div>
-        <label class="block text-xs font-semibold mb-1">Profit (Max)</label>
+        <label class="block mb-1 text-xs font-semibold">Profit (Max)</label>
         <input type="number" v-model.number="filters.profitMax" class="w-24 px-2 py-1 border rounded" placeholder="Max" />
       </div>
       <div>
-        <label class="block text-xs font-semibold mb-1">#Tx (Min)</label>
+        <label class="block mb-1 text-xs font-semibold">#Tx (Min)</label>
         <input type="number" v-model.number="filters.txMin" class="w-20 px-2 py-1 border rounded" placeholder="Min" />
       </div>
       <div>
-        <label class="block text-xs font-semibold mb-1">#Tx (Max)</label>
+        <label class="block mb-1 text-xs font-semibold">#Tx (Max)</label>
         <input type="number" v-model.number="filters.txMax" class="w-20 px-2 py-1 border rounded" placeholder="Max" />
       </div>
       <div>
-        <label class="block text-xs font-semibold mb-1">Last Active (from)</label>
+        <label class="block mb-1 text-xs font-semibold">Last Active (from)</label>
         <input type="date" v-model="filters.lastActiveFrom" class="px-2 py-1 border rounded" />
       </div>
       <div>
-        <label class="block text-xs font-semibold mb-1">Last Active (to)</label>
+        <label class="block mb-1 text-xs font-semibold">Last Active (to)</label>
         <input type="date" v-model="filters.lastActiveTo" class="px-2 py-1 border rounded" />
       </div>
       <div>
-        <label class="block text-xs font-semibold mb-1">Token</label>
+        <label class="block mb-1 text-xs font-semibold">Token</label>
         <select v-model="filters.token" class="px-2 py-1 border rounded">
           <option value="">Any</option>
           <option v-for="token in allTokens" :key="token" :value="token">{{ token }}</option>
@@ -50,47 +50,47 @@
         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0a78b9]"
       />
     </div>
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="p-6 bg-white rounded-lg shadow">
       <table class="min-w-full divide-y divide-gray-200">
         <thead>
           <tr>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" @click="sortBy('rank')">
+            <th class="px-4 py-2 text-xs font-medium text-left text-gray-500 uppercase cursor-pointer" @click="sortBy('rank')">
               Rank
               <span v-if="sortKey === 'rank'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
             </th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" @click="sortBy('address')">
+            <th class="px-4 py-2 text-xs font-medium text-left text-gray-500 uppercase cursor-pointer" @click="sortBy('address')">
               Wallet Address
               <span v-if="sortKey === 'address'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
             </th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" @click="sortBy('profit')">
+            <th class="px-4 py-2 text-xs font-medium text-left text-gray-500 uppercase cursor-pointer" @click="sortBy('profit')">
               Profit (SOL)
               <span v-if="sortKey === 'profit'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
             </th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" @click="sortBy('pnl')">
+            <th class="px-4 py-2 text-xs font-medium text-left text-gray-500 uppercase cursor-pointer" @click="sortBy('pnl')">
               PNL
               <span v-if="sortKey === 'pnl'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
             </th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" @click="sortBy('txCount')">
+            <th class="px-4 py-2 text-xs font-medium text-left text-gray-500 uppercase cursor-pointer" @click="sortBy('txCount')">
               #Tx
               <span v-if="sortKey === 'txCount'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
             </th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" @click="sortBy('avgTokensPerDay')">
+            <th class="px-4 py-2 text-xs font-medium text-left text-gray-500 uppercase cursor-pointer" @click="sortBy('avgTokensPerDay')">
               Avg Tokens/Day
               <span v-if="sortKey === 'avgTokensPerDay'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
             </th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" @click="sortBy('avgHoldTime')">
+            <th class="px-4 py-2 text-xs font-medium text-left text-gray-500 uppercase cursor-pointer" @click="sortBy('avgHoldTime')">
               Avg Hold Time (days)
               <span v-if="sortKey === 'avgHoldTime'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
             </th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" @click="sortBy('lastActive')">
+            <th class="px-4 py-2 text-xs font-medium text-left text-gray-500 uppercase cursor-pointer" @click="sortBy('lastActive')">
               Last Active
               <span v-if="sortKey === 'lastActive'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
             </th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" @click="sortBy('winrate')">
+            <th class="px-4 py-2 text-xs font-medium text-left text-gray-500 uppercase cursor-pointer" @click="sortBy('winrate')">
               Winrate
               <span v-if="sortKey === 'winrate'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
             </th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" @click="sortBy('tokens')">
+            <th class="px-4 py-2 text-xs font-medium text-left text-gray-500 uppercase cursor-pointer" @click="sortBy('tokens')">
               Token Holdings
               <span v-if="sortKey === 'tokens'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
             </th>
@@ -101,7 +101,7 @@
           <tr v-for="(wallet, i) in sortedWallets" :key="wallet.address" class="hover:bg-gray-50">
             <td class="px-4 py-2">{{ i + 1 }}</td>
             <td class="px-4 py-2 font-mono">{{ wallet.address }}</td>
-            <td class="px-4 py-2 text-green-700 font-semibold">{{ wallet.profit }}</td>
+            <td class="px-4 py-2 font-semibold text-green-700">{{ wallet.profit }}</td>
             <td class="px-4 py-2" :class="wallet.pnl >= 0 ? 'text-green-600' : 'text-red-600'">{{ wallet.pnl > 0 ? '+' : '' }}{{ wallet.pnl }}</td>
             <td class="px-4 py-2">{{ wallet.txCount }}</td>
             <td class="px-4 py-2">{{ wallet.avgTokensPerDay }}</td>
@@ -115,16 +115,16 @@
           </tr>
         </tbody>
       </table>
-      <div v-if="sortedWallets.length === 0" class="text-gray-400 text-center py-8">No wallets found.</div>
+      <div v-if="sortedWallets.length === 0" class="py-8 text-center text-gray-400">No wallets found.</div>
     </div>
 
     <!-- Wallet Details Modal -->
-    <div v-if="selectedWallet" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full relative">
-        <button @click="selectedWallet = null" class="absolute top-2 right-2 text-gray-400 hover:text-gray-700">&times;</button>
-        <h3 class="text-xl font-bold mb-2">Wallet Details</h3>
+    <div v-if="selectedWallet" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+      <div class="relative w-full max-w-lg p-8 bg-white rounded-lg shadow-lg">
+        <button @click="selectedWallet = null" class="absolute text-gray-400 top-2 right-2 hover:text-gray-700">&times;</button>
+        <h3 class="mb-2 text-xl font-bold">Wallet Details</h3>
         <div class="mb-2"><span class="font-semibold">Address:</span> <span class="font-mono">{{ selectedWallet.address }}</span></div>
-        <div class="mb-2"><span class="font-semibold">Profit:</span> <span class="text-green-700 font-semibold">{{ selectedWallet.profit }} SOL</span></div>
+        <div class="mb-2"><span class="font-semibold">Profit:</span> <span class="font-semibold text-green-700">{{ selectedWallet.profit }} SOL</span></div>
         <div class="mb-2"><span class="font-semibold">PNL:</span> <span :class="selectedWallet.pnl >= 0 ? 'text-green-600' : 'text-red-600'">{{ selectedWallet.pnl > 0 ? '+' : '' }}{{ selectedWallet.pnl }}</span></div>
         <div class="mb-2"><span class="font-semibold">Transactions:</span> {{ selectedWallet.txCount }}</div>
         <div class="mb-2"><span class="font-semibold">Avg Tokens/Day:</span> {{ selectedWallet.avgTokensPerDay }}</div>
@@ -132,7 +132,7 @@
         <div class="mb-2"><span class="font-semibold">Last Active:</span> {{ selectedWallet.lastActive }}</div>
         <div class="mb-2"><span class="font-semibold">Token Holdings:</span> <span class="font-mono">{{ selectedWallet.tokens.join(', ') }}</span></div>
         <div class="mb-2"><span class="font-semibold">Recent Activity:</span>
-          <ul class="list-disc ml-6 text-sm">
+          <ul class="ml-6 text-sm list-disc">
             <li v-for="(tx, i) in selectedWallet.recentActivity" :key="i">{{ tx }}</li>
           </ul>
         </div>

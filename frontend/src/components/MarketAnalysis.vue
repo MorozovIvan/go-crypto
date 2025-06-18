@@ -1,82 +1,355 @@
 <template>
-  <div class="p-6 space-y-8">
-    <h2 class="text-2xl font-bold mb-4">Market Analysis Dashboard</h2>
-    <div v-if="error" class="mb-4 p-4 bg-red-100 text-red-700 rounded">
-      <strong>Error:</strong> {{ error }}
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <MetricCard
-        v-for="metric in metrics"
-        :key="metric.key"
-        :title="metric.title"
-        :value="metric.value"
-        :indicator="metric.indicator"
-        :chart-data="metric.chartData"
-        :chart-labels="metric.chartLabels"
-        :error="metric.error"
-      />
-    </div>
-    <div class="mt-8 p-6 bg-white rounded-lg shadow">
-      <h3 class="text-xl font-semibold mb-2">Algorithmic Signal</h3>
-      <div class="flex items-center space-x-4 mb-2">
-        <span class="text-lg font-bold">Signal:</span>
-        <span :class="signalClass">{{ signal }}</span>
-        <span v-if="asset" class="ml-2 text-gray-600">({{ asset }})</span>
-      </div>
-      <div class="flex items-center space-x-4 mb-2">
-        <span class="text-sm font-semibold">Confidence:</span>
-        <span :class="{
-          'text-green-600': confidence === 'High',
-          'text-yellow-600': confidence === 'Medium', 
-          'text-red-600': confidence === 'Low'
-        }">{{ confidence }}</span>
-      </div>
-      <div class="text-gray-700">Weighted Score: <span class="font-mono">{{ totalScore.toFixed(2) }}</span></div>
-      <div class="mt-4">
-        <h4 class="font-semibold mb-1">Score Breakdown:</h4>
-        <ul class="text-sm text-gray-600 grid grid-cols-2 md:grid-cols-3 gap-2">
-          <li v-for="metric in metrics" :key="metric.key">
-            <span class="font-bold">{{ metric.title }}:</span> {{ metric.error ? 'Error' : metric.score }} (w: {{ metric.weight * 100 }}%)
-          </li>
-        </ul>
-      </div>
-    </div>
-    <div class="metric-card">
-      <h3>RSI (Relative Strength Index)</h3>
-      <div v-if="getMetricByKey('rsi').loading" class="loading">Loading...</div>
-      <div v-else-if="getMetricByKey('rsi').error" class="error">{{ getMetricByKey('rsi').error }}</div>
-      <div v-else>
-        <div class="metric-value">{{ getMetricByKey('rsi').value ? getMetricByKey('rsi').value.toFixed(2) : 'N/A' }}</div>
-        <div class="metric-indicator" :class="getRSIIndicator(getMetricByKey('rsi').value)">
-          {{ getRSIIndicatorText(getMetricByKey('rsi').value) }}
+  <div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
+    <!-- Header Section with Enhanced Controls -->
+    <div class="mb-8">
+      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+        <div>
+          <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Market Analysis Dashboard
+          </h1>
+          <p class="text-gray-600 mt-2">Real-time crypto market intelligence with 26 advanced metrics</p>
         </div>
-        <div class="metric-chart">
-          <LineChart
-            :data="getMetricByKey('rsi').historical || []"
-            :labels="['5d', '4d', '3d', '2d', 'Now']"
-            :color="getRSIColor(getMetricByKey('rsi').value)"
+        
+        <!-- Enhanced Controls -->
+        <div class="flex flex-col sm:flex-row gap-4">
+          <!-- Data Source Switcher -->
+          <div class="flex items-center space-x-3 bg-white p-3 rounded-xl shadow-lg border border-gray-200">
+            <span class="text-sm font-medium text-gray-700">Data:</span>
+            <div class="flex items-center space-x-2">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  v-model="useMockData" 
+                  @change="toggleDataSource"
+                  class="sr-only peer"
+                >
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+              <div class="flex flex-col text-xs">
+                <span :class="useMockData ? 'text-blue-600 font-semibold' : 'text-gray-500'">Mock</span>
+                <span :class="!useMockData ? 'text-green-600 font-semibold' : 'text-gray-500'">Live</span>
+              </div>
+            </div>
+            <div :class="useMockData ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'" 
+                 class="px-3 py-1 text-xs font-medium rounded-full">
+              {{ useMockData ? 'Enhanced Mock' : 'Real APIs' }}
+            </div>
+          </div>
+
+          <!-- Auto-refresh Toggle -->
+          <div class="flex items-center space-x-3 bg-white p-3 rounded-xl shadow-lg border border-gray-200">
+            <span class="text-sm font-medium text-gray-700">Auto-refresh:</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                v-model="autoRefresh" 
+                @change="toggleAutoRefresh"
+                class="sr-only peer"
+              >
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+            </label>
+            <span class="text-xs" :class="autoRefresh ? 'text-green-600' : 'text-gray-500'">
+              {{ autoRefresh ? 'ON' : 'OFF' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="flex flex-wrap items-center gap-4 p-4 bg-white rounded-xl shadow-lg border border-gray-200">
+        <div class="flex items-center space-x-2">
+          <div :class="connectionStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'" 
+               class="w-3 h-3 rounded-full animate-pulse"></div>
+          <span class="text-sm font-medium">
+            {{ connectionStatus === 'connected' ? 'Connected' : 'Disconnected' }}
+          </span>
+        </div>
+        <div class="text-sm text-gray-600">
+          Coverage: <span class="font-semibold">{{ dataCoverage }}%</span>
+        </div>
+        <div class="text-sm text-gray-600">
+          Last Update: <span class="font-mono">{{ lastUpdateTime }}</span>
+        </div>
+        <div class="text-sm text-gray-600">
+          Next Refresh: <span class="font-mono">{{ nextRefreshIn }}s</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert Banner -->
+    <div v-if="error" class="mb-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-lg">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-red-700"><strong>Warning:</strong> {{ error }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Layout -->
+    <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+      
+      <!-- Left Column: Signal Summary & Key Metrics -->
+      <div class="xl:col-span-1 space-y-6">
+        
+        <!-- AI Signal Card -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+          <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
+            <h3 class="text-xl font-bold mb-2">🤖 AI Trading Signal</h3>
+            <div class="text-blue-100 text-sm">Advanced algorithmic analysis</div>
+          </div>
+          
+          <div class="p-6 space-y-4">
+            <!-- Signal Display -->
+            <div class="text-center">
+              <div class="text-3xl font-bold mb-2" :class="signalColorClass">
+                {{ signal }}
+              </div>
+              <div v-if="asset" class="text-gray-600 text-sm mb-3">
+                Recommended Asset: <span class="font-semibold">{{ asset }}</span>
+              </div>
+              
+              <!-- Confidence Meter -->
+              <div class="mb-4">
+                <div class="flex justify-between text-sm mb-1">
+                  <span>Confidence</span>
+                  <span class="font-semibold" :class="confidenceColorClass">{{ confidence }}</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                  <div class="h-3 rounded-full transition-all duration-500" 
+                       :class="confidenceBarClass" 
+                       :style="{ width: confidencePercentage + '%' }"></div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">{{ confidencePercentage }}%</div>
+              </div>
+              
+              <!-- Score Display -->
+              <div class="bg-gray-50 rounded-lg p-3">
+                <div class="text-sm text-gray-600 mb-1">Weighted Score</div>
+                <div class="text-2xl font-mono font-bold" :class="scoreColorClass">
+                  {{ totalScore.toFixed(3) }}
+                </div>
+                <div class="text-xs text-gray-500">Range: -1.0 to +1.0</div>
+              </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-3 gap-3 pt-4 border-t">
+              <div class="text-center">
+                <div class="text-lg font-bold text-green-600">{{ bullishCount }}</div>
+                <div class="text-xs text-gray-500">Bullish</div>
+              </div>
+              <div class="text-center">
+                <div class="text-lg font-bold text-gray-600">{{ neutralCount }}</div>
+                <div class="text-xs text-gray-500">Neutral</div>
+              </div>
+              <div class="text-center">
+                <div class="text-lg font-bold text-red-600">{{ bearishCount }}</div>
+                <div class="text-xs text-gray-500">Bearish</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Market Health Overview -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
+          <h4 class="text-lg font-bold mb-4 flex items-center">
+            <span class="mr-2">📊</span> Market Health
+          </h4>
+          
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Data Quality</span>
+              <div class="flex items-center space-x-2">
+                <div class="w-16 bg-gray-200 rounded-full h-2">
+                  <div class="bg-green-500 h-2 rounded-full transition-all duration-500" 
+                       :style="{ width: dataQuality + '%' }"></div>
+                </div>
+                <span class="text-sm font-semibold">{{ dataQuality }}%</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Signal Strength</span>
+              <div class="flex items-center space-x-2">
+                <div class="w-16 bg-gray-200 rounded-full h-2">
+                  <div class="bg-blue-500 h-2 rounded-full transition-all duration-500" 
+                       :style="{ width: signalStrength * 100 + '%' }"></div>
+                </div>
+                <span class="text-sm font-semibold">{{ (signalStrength * 100).toFixed(0) }}%</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Consensus</span>
+              <div class="flex items-center space-x-2">
+                <div class="w-16 bg-gray-200 rounded-full h-2">
+                  <div class="bg-purple-500 h-2 rounded-full transition-all duration-500" 
+                       :style="{ width: consensusRatio * 100 + '%' }"></div>
+                </div>
+                <span class="text-sm font-semibold">{{ (consensusRatio * 100).toFixed(0) }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Movers -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
+          <h4 class="text-lg font-bold mb-4 flex items-center">
+            <span class="mr-2">🔥</span> Signal Drivers
+          </h4>
+          
+          <div class="space-y-3">
+            <div v-for="metric in topMovers" :key="metric.key" class="flex justify-between items-center">
+              <div class="flex-1">
+                <div class="text-sm font-medium">{{ metric.title }}</div>
+                <div class="text-xs text-gray-500">Weight: {{ (metric.weight * 100).toFixed(0) }}%</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-bold" :class="getScoreColor(metric.score)">
+                  {{ metric.score.toFixed(2) }}
+                </div>
+                <div class="text-xs" :class="getIndicatorColor(metric.indicator)">
+                  {{ metric.indicator }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Metrics Grid -->
+      <div class="xl:col-span-3">
+        
+        <!-- Filter and Sort Controls -->
+        <div class="mb-6 flex flex-wrap gap-4 items-center justify-between">
+          <div class="flex flex-wrap gap-2">
+            <button 
+              v-for="category in categories" 
+              :key="category"
+              @click="selectedCategory = category"
+              :class="selectedCategory === category ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+              class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors"
+            >
+              {{ category }}
+            </button>
+          </div>
+          
+          <div class="flex items-center space-x-3">
+            <select v-model="sortBy" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+              <option value="weight">Sort by Weight</option>
+              <option value="score">Sort by Score</option>
+              <option value="alphabetical">Sort A-Z</option>
+            </select>
+            
+            <button 
+              @click="refreshAllMetrics" 
+              :disabled="isRefreshing"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center space-x-2"
+            >
+              <svg :class="isRefreshing ? 'animate-spin' : ''" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              <span>{{ isRefreshing ? 'Refreshing...' : 'Refresh' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Enhanced Metrics Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <EnhancedMetricCard
+            v-for="metric in filteredAndSortedMetrics"
+            :key="metric.key"
+            :title="metric.title"
+            :value="metric.value"
+            :indicator="metric.indicator"
+            :score="metric.score"
+            :weight="metric.weight"
+            :chart-data="metric.chartData"
+            :chart-labels="metric.chartLabels"
+            :error="metric.error"
+            :loading="metric.loading"
+            :last-updated="metric.lastUpdated"
+            @refresh="fetchMetric(metric.key)"
           />
         </div>
       </div>
     </div>
-    <div class="metric-card">
-      <h3>Google Trends</h3>
-      <div v-if="getMetricByKey('google-trends').loading" class="loading">Loading...</div>
-      <div v-else-if="getMetricByKey('google-trends').error" class="error">{{ getMetricByKey('google-trends').error }}</div>
-      <div v-else>
-        <div class="metric-value">{{ getMetricByKey('google-trends').value ? getMetricByKey('google-trends').value.toFixed(2) : 'N/A' }}</div>
-        <div class="metric-indicator" :class="getTrendsIndicator(getMetricByKey('google-trends').value)">
-          {{ getTrendsIndicatorText(getMetricByKey('google-trends').value) }}
+
+    <!-- Score Breakdown Modal -->
+    <div v-if="showBreakdown" @click="showBreakdown = false" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div @click.stop class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-auto">
+        <div class="p-6 border-b">
+          <div class="flex justify-between items-center">
+            <h3 class="text-2xl font-bold">Detailed Score Breakdown</h3>
+            <button @click="showBreakdown = false" class="text-gray-500 hover:text-gray-700">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
         </div>
-        <div class="metric-chart">
-          <LineChart
-            :data="getMetricByKey('google-trends').historical || []"
-            :labels="['5d', '4d', '3d', '2d', 'Now']"
-            :color="getTrendsColor(getMetricByKey('google-trends').value)"
-          />
+        
+        <div class="p-6">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b">
+                  <th class="text-left py-2">Metric</th>
+                  <th class="text-center py-2">Value</th>
+                  <th class="text-center py-2">Score</th>
+                  <th class="text-center py-2">Weight</th>
+                  <th class="text-center py-2">Contribution</th>
+                  <th class="text-center py-2">Signal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="metric in metrics" :key="metric.key" class="border-b hover:bg-gray-50">
+                  <td class="py-3">
+                    <div class="font-medium">{{ metric.title }}</div>
+                    <div class="text-xs text-gray-500">{{ metric.key }}</div>
+                  </td>
+                  <td class="text-center py-3">
+                    <span v-if="!metric.error" class="font-mono">{{ formatValue(metric.value) }}</span>
+                    <span v-else class="text-red-500">Error</span>
+                  </td>
+                  <td class="text-center py-3">
+                    <span class="font-mono" :class="getScoreColor(metric.score)">
+                      {{ metric.score.toFixed(3) }}
+                    </span>
+                  </td>
+                  <td class="text-center py-3">{{ (metric.weight * 100).toFixed(1) }}%</td>
+                  <td class="text-center py-3">
+                    <span class="font-mono" :class="getScoreColor(metric.score * metric.weight)">
+                      {{ (metric.score * metric.weight).toFixed(4) }}
+                    </span>
+                  </td>
+                  <td class="text-center py-3">
+                    <span class="px-2 py-1 rounded-full text-xs font-medium" :class="getIndicatorBadgeClass(metric.indicator)">
+                      {{ metric.indicator }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Floating Action Button for Breakdown -->
+    <button 
+      @click="showBreakdown = true"
+      class="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-40"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+      </svg>
+    </button>
   </div>
 </template>
 
@@ -95,12 +368,13 @@ import {
   Filler
 } from 'chart.js';
 import MetricCard from './MetricCard.vue';
+import EnhancedMetricCard from './EnhancedMetricCard.vue';
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement, Filler);
 
 export default defineComponent({
   name: 'MarketAnalysis',
-  components: { MetricCard },
+  components: { MetricCard, EnhancedMetricCard },
   data() {
     console.log('MarketAnalysis: data() called');
     return {
@@ -431,7 +705,30 @@ export default defineComponent({
       wsReconnectAttempts: 0,
       maxReconnectAttempts: 5,
       reconnectInterval: 5000,
-      lastUpdateTime: null
+      lastUpdateTime: null,
+      useMockData: false,
+      autoRefresh: false,
+      connectionStatus: 'disconnected',
+      dataCoverage: 0,
+      nextRefreshIn: 0,
+      showBreakdown: false,
+      selectedCategory: 'All',
+      sortBy: 'weight',
+      isRefreshing: false,
+      signalStrength: 0,
+      consensusRatio: 0,
+      dataQuality: 0,
+      bullishCount: 0,
+      neutralCount: 0,
+      bearishCount: 0,
+      signalColorClass: {},
+      confidenceColorClass: {},
+      confidenceBarClass: {},
+      scoreColorClass: {},
+      confidencePercentage: 0,
+      topMovers: [],
+      categories: ['All', 'Fear & Greed', 'BTC Dominance', 'RSI', 'Market Cap', 'Google Trends'],
+      filteredAndSortedMetrics: []
     };
   },
   created() {
@@ -457,6 +754,18 @@ export default defineComponent({
     
     // Performance monitoring
     this.startPerformanceMonitoring()
+    
+    // Initialize enhanced UX features
+    this.nextRefreshIn = 30;
+    this.lastUpdateTime = new Date().toLocaleTimeString();
+    this.updateConnectionStatus();
+    this.updateRefreshTimer();
+    
+    // Update UI state every second
+    setInterval(() => {
+      this.lastUpdateTime = new Date().toLocaleTimeString();
+      this.updateConnectionStatus();
+    }, 1000);
   },
   beforeUnmount() {
     console.log('MarketAnalysis: beforeUnmount() hook called');
@@ -503,6 +812,74 @@ export default defineComponent({
       }
       return error || 'An error occurred while fetching data'
     },
+    
+    // Toggle between mock and real data sources
+    toggleDataSource() {
+      console.log(`[toggleDataSource] Switching to ${this.useMockData ? 'Mock' : 'Real'} data`);
+      
+      // Reset all metrics to loading state
+      this.metrics.forEach(metric => {
+        metric.loading = true;
+        metric.error = false;
+        metric.value = null;
+        metric.indicator = 'Hold';
+        metric.score = 0;
+        metric.chartData = [];
+        metric.chartLabels = [];
+      });
+      
+      // Close existing WebSocket connection
+      this.closeWebSocket();
+      
+      // Refetch all metrics with new data source
+      this.fetchAllMetrics();
+      
+      // Reinitialize WebSocket connection
+      setTimeout(() => {
+        this.initWebSocket();
+      }, 1000);
+      
+      // Show notification about the switch
+      this.showDataSourceNotification();
+    },
+    
+    // Show notification about data source switch
+    showDataSourceNotification() {
+      const notification = document.createElement('div');
+      notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transition-all duration-300 ${
+        this.useMockData 
+          ? 'bg-blue-100 border-blue-400 text-blue-800' 
+          : 'bg-green-100 border-green-400 text-green-800'
+      }`;
+      notification.innerHTML = `
+        <div class="flex items-center space-x-2">
+          <div class="font-semibold">
+            ${this.useMockData ? '🧪 Mock Data Mode' : '📊 Live Data Mode'}
+          </div>
+          <div class="text-sm">
+            Coverage: ${this.useMockData ? '100%' : '77%'}
+          </div>
+        </div>
+        <div class="text-xs mt-1">
+          ${this.useMockData 
+            ? 'Using enhanced mock data for all metrics' 
+            : 'Using real APIs where available, fallback for others'
+          }
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Auto-remove after 4 seconds
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 4000);
+    },
     async fetchMetric(key) {
       const idx = this.metrics.findIndex(m => m.key === key);
       if (idx === -1) return;
@@ -515,8 +892,9 @@ export default defineComponent({
       
       while (retryCount < maxRetries) {
         try {
-          console.log(`[fetchMetric] Fetching ${key} (attempt ${retryCount + 1}/${maxRetries})`);
-          const response = await fetch(`/api/${key}`, {
+          console.log(`[fetchMetric] Fetching ${key} (attempt ${retryCount + 1}/${maxRetries}) - Mock: ${this.useMockData}`);
+          const mockParam = this.useMockData ? '?mock=true' : '';
+          const response = await fetch(`/api/${key}${mockParam}`, {
             timeout: 10000, // 10 second timeout
             headers: {
               'Cache-Control': 'no-cache',
@@ -910,6 +1288,38 @@ export default defineComponent({
       this.signal = signal;
       this.asset = asset;
       this.confidence = confidence;
+      this.signalStrength = signalStrength;
+      this.consensusRatio = consensusRatio;
+      this.dataQuality = dataQuality;
+      this.bullishCount = bullishCount;
+      this.neutralCount = neutralCount;
+      this.bearishCount = bearishCount;
+      this.confidencePercentage = Math.round(confidenceScore * 100);
+      this.confidenceColorClass = {
+        'text-green-600': confidence === 'High',
+        'text-yellow-600': confidence === 'Medium',
+        'text-red-600': confidence === 'Low'
+      };
+      this.scoreColorClass = {
+        'text-green-600': totalScore > 0,
+        'text-red-600': totalScore < 0
+      };
+      this.signalColorClass = {
+        'text-green-600': signal === 'Strong Buy' || signal === 'Buy',
+        'text-red-600': signal === 'Strong Sell' || signal === 'Sell',
+        'text-yellow-600': signal === 'Hold'
+      };
+      this.topMovers = this.metrics.filter(m => m.weight > 0.05);
+      this.filteredAndSortedMetrics = this.metrics.filter(m => this.selectedCategory === 'All' || m.title.includes(this.selectedCategory));
+      this.filteredAndSortedMetrics.sort((a, b) => {
+        if (this.sortBy === 'weight') {
+          return b.weight - a.weight;
+        } else if (this.sortBy === 'score') {
+          return b.score - a.score;
+        } else {
+          return a.title.localeCompare(b.title);
+        }
+      });
     },
     async fetchAllMetrics() {
       console.log('MarketAnalysis: fetchAllMetrics() called');
@@ -1192,6 +1602,86 @@ export default defineComponent({
         nonCriticalMetrics.forEach(key => this.fetchMetric(key))
       }, 2 * 60 * 1000) // Every 2 minutes
     },
+    
+    // Enhanced UX/UI Methods
+    toggleDataSource() {
+      this.fetchAllMetrics();
+    },
+    
+    toggleAutoRefresh() {
+      if (this.autoRefresh) {
+        this.autoRefreshInterval = setInterval(() => {
+          this.refreshAllMetrics();
+        }, 30000); // Refresh every 30 seconds
+      } else {
+        if (this.autoRefreshInterval) {
+          clearInterval(this.autoRefreshInterval);
+          this.autoRefreshInterval = null;
+        }
+      }
+    },
+    
+    async refreshAllMetrics() {
+      this.isRefreshing = true;
+      try {
+        await this.fetchAllMetrics();
+      } finally {
+        this.isRefreshing = false;
+      }
+    },
+    
+    formatValue(value) {
+      if (value === null || value === undefined) return 'N/A';
+      if (typeof value === 'number') {
+        if (value > 1000000) return (value / 1000000).toFixed(1) + 'M';
+        if (value > 1000) return (value / 1000).toFixed(1) + 'K';
+        return value.toFixed(2);
+      }
+      return String(value);
+    },
+    
+    getScoreColor(score) {
+      if (score > 0.3) return 'text-green-600';
+      if (score < -0.3) return 'text-red-600';
+      return 'text-gray-600';
+    },
+    
+    getIndicatorColor(indicator) {
+      if (indicator === 'Buy') return 'text-green-600';
+      if (indicator === 'Sell') return 'text-red-600';
+      return 'text-gray-600';
+    },
+    
+    getIndicatorBadgeClass(indicator) {
+      return {
+        'bg-green-100 text-green-800': indicator === 'Buy',
+        'bg-red-100 text-red-800': indicator === 'Sell',
+        'bg-yellow-100 text-yellow-800': indicator === 'Hold'
+      };
+    },
+    
+    updateConnectionStatus() {
+      this.connectionStatus = this.wsConnected ? 'connected' : 'disconnected';
+      const availableMetrics = this.metrics.filter(m => !m.error).length;
+      this.dataCoverage = Math.round((availableMetrics / this.metrics.length) * 100);
+    },
+    
+    updateRefreshTimer() {
+      if (this.autoRefresh) {
+        this.refreshTimer = setInterval(() => {
+          this.nextRefreshIn--;
+          if (this.nextRefreshIn <= 0) {
+            this.nextRefreshIn = 30;
+            this.refreshAllMetrics();
+          }
+        }, 1000);
+      } else {
+        if (this.refreshTimer) {
+          clearInterval(this.refreshTimer);
+          this.refreshTimer = null;
+        }
+      }
+    }
   }
 });
 </script>

@@ -1,11 +1,11 @@
 <template>
-  <aside class="w-64 bg-white border-r border-gray-200 h-screen">
+  <aside class="w-64 h-screen bg-white border-r border-gray-200">
     <div class="p-4">
-      <h2 class="text-xl font-bold text-gray-800 mb-4">Menu</h2>
+      <h2 class="mb-4 text-xl font-bold text-gray-800">Menu</h2>
       <nav class="space-y-2">
         <button
           @click="$emit('change-view', 'telegram')"
-          class="w-full flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          class="flex items-center w-full px-4 py-2 space-x-2 text-gray-700 transition-colors rounded-lg hover:bg-gray-100"
           :class="{ 'bg-gray-100': currentView === 'telegram' }"
         >
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -15,7 +15,7 @@
         </button>
         <button
           @click="$emit('change-view', 'market')"
-          class="w-full flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          class="flex items-center w-full px-4 py-2 space-x-2 text-gray-700 transition-colors rounded-lg hover:bg-gray-100"
           :class="{ 'bg-gray-100': currentView === 'market' }"
         >
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -25,24 +25,44 @@
         </button>
         <button
           @click="$emit('change-view', 'solana-wallets')"
-          class="w-full flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          class="flex items-center w-full px-4 py-2 space-x-2 text-gray-700 transition-colors rounded-lg hover:bg-gray-100"
           :class="{ 'bg-gray-100': currentView === 'solana-wallets' }"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <rect x="2" y="7" width="20" height="10" rx="2" stroke-width="2" stroke="currentColor"/>
             <path d="M16 12h.01" stroke-width="2" stroke-linecap="round" stroke="currentColor"/>
           </svg>
-          <span>Find profitable Solana wallets</span>
+          <span>Find Solana wallets</span>
         </button>
         <button
           @click="$emit('change-view', 'portfolio')"
-          class="w-full flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          class="flex items-center w-full px-4 py-2 space-x-2 text-gray-700 transition-colors rounded-lg hover:bg-gray-100"
           :class="{ 'bg-gray-100': currentView === 'portfolio' }"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
           <span>Portfolio</span>
+        </button>
+        <button
+          @click="$emit('change-view', 'arbitration')"
+          class="flex items-center w-full px-4 py-2 space-x-2 text-gray-700 transition-colors rounded-lg hover:bg-gray-100"
+          :class="{ 'bg-gray-100': currentView === 'arbitration' }"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+          </svg>
+          <span>Arbitration</span>
+        </button>
+        <button
+          @click="$emit('change-view', 'sniping')"
+          class="flex items-center w-full px-4 py-2 space-x-2 text-gray-700 transition-colors rounded-lg hover:bg-gray-100"
+          :class="{ 'bg-gray-100': currentView === 'sniping' }"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          <span>Sniping New Tokens</span>
         </button>
       </nav>
     </div>

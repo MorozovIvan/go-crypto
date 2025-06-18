@@ -41,3 +41,5 @@ auth_state.json
 .history/
 telegram.log
 telegram_service.log
+server.log
+frontend.log
