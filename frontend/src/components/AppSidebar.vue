@@ -64,6 +64,7 @@
           </svg>
           <span>Sniping New Tokens</span>
         </button>
+
       </nav>
     </div>
   </aside>

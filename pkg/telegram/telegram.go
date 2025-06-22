@@ -11,6 +11,7 @@ import (
 	"io"
 	"math/big"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -218,20 +219,36 @@ func (s *TelegramService) checkExistingSession() {
 					// Wait for client to be ready
 					select {
 					case <-s.clientReady:
-						// Give the client some time to fully initialize
-						time.Sleep(2 * time.Second)
+						// Give the client more time to fully initialize
+						time.Sleep(5 * time.Second)
 
 						// Try to get current user to verify session is still valid
-						if user, err := s.GetCurrentUser(); err == nil {
-							s.logger.Info("Session restored successfully from persistent state",
-								zap.Any("user", user))
-						} else {
-							s.logger.Warn("Session validation failed, but keeping auth state for retry",
-								zap.Error(err))
-							// Don't immediately clear auth state - it might be a temporary network issue
-							// The GetCurrentUser method will handle clearing auth state if needed
+						maxRetries := 3
+						for attempt := 1; attempt <= maxRetries; attempt++ {
+							s.logger.Info("Validating existing session",
+								zap.Int("attempt", attempt),
+								zap.Int64("user_id", authState.UserID))
+
+							if user, err := s.GetCurrentUser(); err == nil {
+								s.logger.Info("Session restored successfully from persistent state",
+									zap.Any("user", user))
+								return
+							} else {
+								s.logger.Warn("Session validation failed",
+									zap.Error(err),
+									zap.Int("attempt", attempt))
+
+								if attempt < maxRetries {
+									time.Sleep(time.Duration(attempt) * 3 * time.Second)
+								}
+							}
 						}
-					case <-time.After(15 * time.Second):
+
+						s.logger.Warn("Session validation failed after all attempts, but keeping auth state for manual retry")
+						// Don't automatically clear auth state - let user try to access endpoints
+						// which will trigger recovery or require re-authentication
+
+					case <-time.After(30 * time.Second):
 						s.logger.Warn("Client not ready for session validation timeout")
 					}
 				}()
@@ -260,25 +277,40 @@ func (s *TelegramService) attemptSessionRecovery() error {
 	s.mu.Unlock()
 
 	// Wait for current client to close
-	time.Sleep(2 * time.Second)
+	time.Sleep(3 * time.Second)
 
 	// Reinitialize client
 	s.reinitializeClient()
 
-	// Wait for client to be ready
+	// Wait for client to be ready with increased timeout
 	select {
 	case <-s.clientReady:
 		s.logger.Info("Client reinitialized for session recovery")
 
-		// Test the recovered session
-		if user, err := s.GetCurrentUser(); err == nil {
-			s.logger.Info("Session recovery successful", zap.Any("user", user))
-			return nil
-		} else {
-			s.logger.Warn("Session recovery failed", zap.Error(err))
-			return err
+		// Test the recovered session with retry logic
+		maxRetries := 3
+		for attempt := 1; attempt <= maxRetries; attempt++ {
+			s.logger.Info("Testing recovered session", zap.Int("attempt", attempt))
+
+			if user, err := s.GetCurrentUser(); err == nil {
+				s.logger.Info("Session recovery successful", zap.Any("user", user))
+				return nil
+			} else {
+				s.logger.Warn("Session recovery test failed",
+					zap.Error(err),
+					zap.Int("attempt", attempt),
+					zap.Int("max_retries", maxRetries))
+
+				if attempt < maxRetries {
+					time.Sleep(time.Duration(attempt) * 2 * time.Second) // Progressive backoff
+				}
+			}
 		}
-	case <-time.After(20 * time.Second):
+
+		s.logger.Error("Session recovery failed after all attempts")
+		return fmt.Errorf("session recovery failed after %d attempts", maxRetries)
+
+	case <-time.After(30 * time.Second): // Increased timeout
 		s.logger.Error("Session recovery timeout")
 		return fmt.Errorf("session recovery timeout")
 	}
@@ -319,7 +351,7 @@ func (s *TelegramService) saveAuthState() {
 		zap.String("phone", authState.Phone))
 }
 
-// ClearSessions clears all session data and resets the service state
+// ClearSessions clears all session data and resets the service state (for explicit logout only)
 func (s *TelegramService) ClearSessions() {
 	s.logger.Info("Clearing all sessions and resetting service state")
 
@@ -544,6 +576,7 @@ func (s *TelegramService) GetUserGroups(userID int64) ([]map[string]interface{},
 					"type":        "channel",
 					"members":     c.ParticipantsCount,
 					"description": description,
+					"access_hash": c.AccessHash,
 				})
 			case *tg.Chat:
 				s.logger.Info("Found chat", zap.Int64("id", c.ID), zap.String("title", c.Title))
@@ -590,6 +623,7 @@ func (s *TelegramService) GetUserGroups(userID int64) ([]map[string]interface{},
 					"type":        "channel",
 					"members":     c.ParticipantsCount,
 					"description": description,
+					"access_hash": c.AccessHash,
 				})
 			case *tg.Chat:
 				s.logger.Info("Found chat", zap.Int64("id", c.ID), zap.String("title", c.Title))
@@ -610,6 +644,346 @@ func (s *TelegramService) GetUserGroups(userID int64) ([]map[string]interface{},
 
 	s.logger.Info("Successfully retrieved user groups", zap.Int("count", len(result)))
 	return result, nil
+}
+
+// GetGroupMessages retrieves recent messages from a specific group/channel and extracts contract addresses
+func (s *TelegramService) GetGroupMessages(groupID int64, accessHash int64, limit int, period string) ([]map[string]interface{}, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.logger.Info("GetGroupMessages called", zap.Int64("groupID", groupID), zap.Int("limit", limit), zap.String("period", period))
+
+	if s.client == nil {
+		s.logger.Error("No authenticated client available")
+		return nil, fmt.Errorf("no authenticated client available")
+	}
+
+	// Create a new context for this operation
+	ctx, cancel := context.WithTimeout(s.ctx, 30*time.Second)
+	defer cancel()
+
+	api := s.client.API()
+
+	// Calculate time range based on period
+	var sinceTime time.Time
+	switch period {
+	case "24h":
+		sinceTime = time.Now().Add(-24 * time.Hour)
+	case "3d":
+		sinceTime = time.Now().Add(-72 * time.Hour)
+	case "7d":
+		sinceTime = time.Now().Add(-168 * time.Hour)
+	case "1m":
+		sinceTime = time.Now().Add(-720 * time.Hour)
+	default:
+		sinceTime = time.Now().Add(-24 * time.Hour)
+	}
+
+	// Get messages from the group/channel
+	var inputPeer tg.InputPeerClass
+	if accessHash != 0 {
+		// This is a channel
+		inputPeer = &tg.InputPeerChannel{
+			ChannelID:  groupID,
+			AccessHash: accessHash,
+		}
+	} else {
+		// This is a regular group
+		inputPeer = &tg.InputPeerChat{
+			ChatID: groupID,
+		}
+	}
+
+	messages, err := api.MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
+		Peer:  inputPeer,
+		Limit: limit,
+	})
+	if err != nil {
+		s.logger.Error("Failed to get messages", zap.Error(err))
+		return nil, fmt.Errorf("failed to get messages: %v", err)
+	}
+
+	var result []map[string]interface{}
+
+	switch m := messages.(type) {
+	case *tg.MessagesMessages:
+		s.logger.Info("Processing MessagesMessages", zap.Int("message_count", len(m.Messages)))
+		for _, msg := range m.Messages {
+			if message, ok := msg.(*tg.Message); ok {
+				messageTime := time.Unix(int64(message.Date), 0)
+				if messageTime.Before(sinceTime) {
+					continue // Skip messages older than the specified period
+				}
+
+				if message.Message != "" {
+					// Extract potential Solana contract addresses
+					contracts := s.extractSolanaContracts(message.Message)
+					if len(contracts) > 0 {
+						result = append(result, map[string]interface{}{
+							"id":        message.ID,
+							"message":   message.Message,
+							"date":      messageTime.Format(time.RFC3339),
+							"contracts": contracts,
+						})
+					}
+				}
+			}
+		}
+	case *tg.MessagesMessagesSlice:
+		s.logger.Info("Processing MessagesMessagesSlice", zap.Int("message_count", len(m.Messages)))
+		for _, msg := range m.Messages {
+			if message, ok := msg.(*tg.Message); ok {
+				messageTime := time.Unix(int64(message.Date), 0)
+				if messageTime.Before(sinceTime) {
+					continue // Skip messages older than the specified period
+				}
+
+				if message.Message != "" {
+					// Extract potential Solana contract addresses
+					contracts := s.extractSolanaContracts(message.Message)
+					if len(contracts) > 0 {
+						result = append(result, map[string]interface{}{
+							"id":        message.ID,
+							"message":   message.Message,
+							"date":      messageTime.Format(time.RFC3339),
+							"contracts": contracts,
+						})
+					}
+				}
+			}
+		}
+	case *tg.MessagesChannelMessages:
+		s.logger.Info("Processing MessagesChannelMessages", zap.Int("message_count", len(m.Messages)))
+		for _, msg := range m.Messages {
+			if message, ok := msg.(*tg.Message); ok {
+				messageTime := time.Unix(int64(message.Date), 0)
+				if messageTime.Before(sinceTime) {
+					continue // Skip messages older than the specified period
+				}
+
+				if message.Message != "" {
+					// Extract potential Solana contract addresses
+					contracts := s.extractSolanaContracts(message.Message)
+					if len(contracts) > 0 {
+						result = append(result, map[string]interface{}{
+							"id":        message.ID,
+							"message":   message.Message,
+							"date":      messageTime.Format(time.RFC3339),
+							"contracts": contracts,
+						})
+					}
+				}
+			}
+		}
+	default:
+		s.logger.Warn("Unexpected messages type", zap.String("type", fmt.Sprintf("%T", messages)))
+	}
+
+	s.logger.Info("Successfully retrieved group messages with contracts", zap.Int("count", len(result)))
+	return result, nil
+}
+
+// extractSolanaContracts extracts potential Solana contract addresses from message text
+func (s *TelegramService) extractSolanaContracts(messageText string) []map[string]interface{} {
+	var contracts []map[string]interface{}
+
+	// Simple pattern matching for Solana addresses (32-44 characters, alphanumeric)
+	words := strings.Fields(messageText)
+	for _, word := range words {
+		// Check if word looks like a Solana address (32-44 characters, alphanumeric)
+		if len(word) >= 32 && len(word) <= 44 {
+			isValidAddress := true
+			for _, char := range word {
+				if !((char >= 'A' && char <= 'Z') || (char >= 'a' && char <= 'z') || (char >= '0' && char <= '9')) {
+					isValidAddress = false
+					break
+				}
+			}
+
+			if isValidAddress {
+				// Try to extract token name from surrounding context
+				tokenName := s.extractTokenName(messageText, word)
+
+				contracts = append(contracts, map[string]interface{}{
+					"address":    word,
+					"token":      tokenName,
+					"blockchain": "solana",
+				})
+			}
+		}
+	}
+
+	return contracts
+}
+
+// extractTokenName tries to extract a token name from the message context
+func (s *TelegramService) extractTokenName(messageText, contractAddress string) string {
+	// Clean the message text
+	text := strings.TrimSpace(messageText)
+
+	// Log the message for debugging
+	s.logger.Debug("Extracting token name", zap.String("message", text), zap.String("contract", contractAddress))
+
+	// Pattern 1: Look for $SYMBOL patterns (most reliable when present)
+	symbolPattern := `\$([A-Za-z][A-Za-z0-9]{1,10})`
+	re := regexp.MustCompile(symbolPattern)
+	matches := re.FindStringSubmatch(text)
+	if len(matches) > 1 {
+		symbol := matches[1]
+		if len(symbol) >= 2 && len(symbol) <= 10 {
+			// Check if it's not a common base currency (only filter actual base currencies)
+			commonSymbols := []string{"USD", "USDT", "USDC", "DAI", "BUSD"}
+			isCommon := false
+			for _, common := range commonSymbols {
+				if strings.EqualFold(symbol, common) {
+					isCommon = true
+					break
+				}
+			}
+			if !isCommon {
+				s.logger.Debug("Found token symbol", zap.String("token", symbol))
+				return symbol
+			}
+		}
+	}
+
+	// Pattern 2: "Name: Token Name (SYMBOL)" format
+	namePattern := `(?i)name\s*:\s*([^(]+?)(?:\s*\([^)]+\))?`
+	re = regexp.MustCompile(namePattern)
+	if matches := re.FindStringSubmatch(text); len(matches) > 1 {
+		tokenName := strings.TrimSpace(matches[1])
+		if len(tokenName) > 1 && len(tokenName) <= 30 {
+			s.logger.Debug("Found token name using Name: pattern", zap.String("token", tokenName))
+			return tokenName
+		}
+	}
+
+	// Pattern 3: "Token Name NEW ALERT" or "Token Name 🔥" format
+	alertPatterns := []string{
+		`^([A-Za-z][A-Za-z0-9\s]{1,25}[A-Za-z0-9])\s+NEW\s+ALERT`,
+		`^([A-Za-z][A-Za-z0-9\s]{1,25}[A-Za-z0-9])\s+🔥`,
+		`^([A-Za-z][A-Za-z0-9\s]{1,25}[A-Za-z0-9])\s+ALERT`,
+		`^([A-Za-z][A-Za-z0-9\s]{1,25}[A-Za-z0-9])\s+PUMP`,
+	}
+
+	for _, pattern := range alertPatterns {
+		re := regexp.MustCompile(pattern)
+		if matches := re.FindStringSubmatch(text); len(matches) > 1 {
+			tokenName := strings.TrimSpace(matches[1])
+			if len(tokenName) > 1 && len(tokenName) <= 30 {
+				s.logger.Debug("Found token name using alert pattern", zap.String("token", tokenName))
+				return tokenName
+			}
+		}
+	}
+
+	// Pattern 4: Look for "Token [NAME]" or "Token: [NAME]" patterns
+	tokenPatterns := []string{
+		`(?i)token\s*:?\s*([A-Za-z][A-Za-z0-9\s]{1,30}[A-Za-z0-9])`,
+		`(?i)coin\s*:?\s*([A-Za-z][A-Za-z0-9\s]{1,30}[A-Za-z0-9])`,
+		`(?i)gem\s*:?\s*([A-Za-z][A-Za-z0-9\s]{1,30}[A-Za-z0-9])`,
+	}
+
+	for _, pattern := range tokenPatterns {
+		re := regexp.MustCompile(pattern)
+		matches := re.FindStringSubmatch(text)
+		if len(matches) > 1 {
+			tokenName := strings.TrimSpace(matches[1])
+			if len(tokenName) > 1 && len(tokenName) <= 30 {
+				s.logger.Debug("Found token name using token pattern", zap.String("token", tokenName))
+				return tokenName
+			}
+		}
+	}
+
+	// Pattern 5: Look for text before the contract address
+	upperText := strings.ToUpper(text)
+	contractIndex := strings.Index(upperText, strings.ToUpper(contractAddress))
+	if contractIndex > 0 {
+		beforeContract := strings.TrimSpace(text[:contractIndex])
+
+		// Split by lines and look for the last meaningful line before the contract
+		lines := strings.Split(beforeContract, "\n")
+		for i := len(lines) - 1; i >= 0; i-- {
+			line := strings.TrimSpace(lines[i])
+			if len(line) == 0 {
+				continue
+			}
+
+			// Remove common prefixes and suffixes
+			cleanLine := line
+			prefixesToRemove := []string{"🚀", "💎", "🔥", "NEW", "FRESH", "HOT", "BUY", "SELL", "PUMP", "MOON", "GEM", "COIN", "TOKEN", "MINT:", "CONTRACT:", "ADDRESS:", "CA:"}
+			suffixesToRemove := []string{"CA:", "CONTRACT:", "ADDRESS:", "MINT:", "-", ":", "🚀", "💎", "🔥"}
+
+			// Clean prefixes
+			words := strings.Fields(cleanLine)
+			var cleanWords []string
+			for _, word := range words {
+				cleanWord := strings.Trim(word, "🚀💎🔥-:.,!?()[]{}\"'")
+				isPrefix := false
+				for _, prefix := range prefixesToRemove {
+					if strings.EqualFold(cleanWord, prefix) {
+						isPrefix = true
+						break
+					}
+				}
+				if !isPrefix && len(cleanWord) > 0 {
+					cleanWords = append(cleanWords, cleanWord)
+				}
+			}
+
+			if len(cleanWords) > 0 {
+				// Join the words to form the token name
+				tokenName := strings.Join(cleanWords, " ")
+
+				// Clean suffixes from the end
+				for _, suffix := range suffixesToRemove {
+					if strings.HasSuffix(strings.ToUpper(tokenName), strings.ToUpper(suffix)) {
+						tokenName = strings.TrimSpace(tokenName[:len(tokenName)-len(suffix)])
+					}
+				}
+
+				if len(tokenName) > 1 && len(tokenName) <= 30 {
+					// Make sure it's not just numbers or symbols
+					hasLetter := false
+					for _, char := range tokenName {
+						if (char >= 'A' && char <= 'Z') || (char >= 'a' && char <= 'z') {
+							hasLetter = true
+							break
+						}
+					}
+					if hasLetter {
+						s.logger.Debug("Found token name before contract", zap.String("token", tokenName))
+						return tokenName
+					}
+				}
+			}
+		}
+	}
+
+	// Fallback: Generate a placeholder name based on contract address
+	if len(contractAddress) >= 8 {
+		fallback := "Token " + contractAddress[:6]
+		s.logger.Debug("Using fallback token name", zap.String("token", fallback))
+		return fallback
+	}
+
+	return "Unknown Token"
+}
+
+// Helper functions
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // formatError formats Telegram API errors into user-friendly messages
@@ -763,7 +1137,35 @@ func (s *TelegramService) GetCurrentUserID() (int64, error) {
 }
 
 func (s *TelegramService) AuthenticateUser(phoneNumber string) error {
-	s.logger.Info("Starting authentication process", zap.String("phone", phoneNumber))
+	s.logger.Info("AuthenticateUser called", zap.String("phone", phoneNumber))
+
+	// Check if client is ready and not nil
+	if s.client == nil {
+		s.logger.Error("Client is nil, cannot authenticate")
+		return fmt.Errorf("telegram client is not initialized")
+	}
+
+	// Wait for client to be ready
+	select {
+	case <-s.clientReady:
+		s.logger.Info("Client is ready, proceeding with authentication")
+	case <-time.After(10 * time.Second):
+		s.logger.Error("Client initialization timeout")
+		return fmt.Errorf("client initialization timeout")
+	}
+
+	// Double-check client is still not nil after waiting
+	if s.client == nil {
+		s.logger.Error("Client became nil after waiting for ready signal")
+		return fmt.Errorf("telegram client became unavailable")
+	}
+
+	// Get the API client
+	api := s.client.API()
+	if api == nil {
+		s.logger.Error("API client is nil")
+		return fmt.Errorf("telegram API client is not available")
+	}
 
 	// Clear any existing session for this phone number
 	s.mu.Lock()
@@ -779,16 +1181,8 @@ func (s *TelegramService) AuthenticateUser(phoneNumber string) error {
 	s.sessions[phoneNumber] = session
 	s.mu.Unlock()
 
-	// Wait for client to be ready
-	select {
-	case <-s.clientReady:
-		s.logger.Info("Client is ready, proceeding with authentication")
-	case <-time.After(5 * time.Second):
-		return fmt.Errorf("client not ready after timeout")
-	}
-
 	// Get the API client
-	api := s.client.API()
+	api = s.client.API()
 
 	// Create a new context for this authentication attempt
 	authCtx, cancel := context.WithTimeout(s.ctx, 30*time.Second)
@@ -1531,8 +1925,8 @@ func (s *TelegramService) GetCurrentUser() (map[string]interface{}, error) {
 		return nil, fmt.Errorf("no authenticated client available")
 	}
 
-	// Create a new context for this operation
-	ctx, cancel := context.WithTimeout(s.ctx, 5*time.Second)
+	// Create a new context for this operation with longer timeout
+	ctx, cancel := context.WithTimeout(s.ctx, 15*time.Second)
 	defer cancel()
 
 	// Use the existing client API directly instead of calling Run()
@@ -1544,9 +1938,13 @@ func (s *TelegramService) GetCurrentUser() (map[string]interface{}, error) {
 		if strings.Contains(err.Error(), "AUTH_KEY_UNREGISTERED") {
 			s.logger.Warn("AUTH_KEY_UNREGISTERED error, attempting session recovery", zap.Error(err))
 
+			// Unlock before calling recovery to prevent deadlock
+			s.mu.Unlock()
+
 			// Try session recovery once
 			if recoveryErr := s.attemptSessionRecovery(); recoveryErr == nil {
-				// Retry getting current user after recovery
+				// Re-lock and retry getting current user after recovery
+				s.mu.Lock()
 				api := s.client.API()
 				if me, retryErr := api.UsersGetUsers(ctx, []tg.InputUserClass{&tg.InputUserSelf{}}); retryErr == nil && len(me) > 0 {
 					if userObj, ok := me[0].(*tg.User); ok {
@@ -1561,17 +1959,17 @@ func (s *TelegramService) GetCurrentUser() (map[string]interface{}, error) {
 						return user, nil
 					}
 				}
+				// Keep lock for the rest of the function
+			} else {
+				s.mu.Lock()
 			}
 
-			// If recovery failed, clear the authentication state
-			s.mu.Lock()
+			// If recovery failed, clear the authentication state BUT don't immediately remove auth_state.json
+			// Let it expire naturally or be removed on next successful auth
 			s.userAuth = false
 			s.userID = 0
-			s.mu.Unlock()
 
-			// Remove the auth state file
-			os.Remove("auth_state.json")
-			s.logger.Warn("Session recovery failed, clearing auth state", zap.Error(err))
+			s.logger.Warn("Session recovery failed, marked as unauthenticated", zap.Error(err))
 			return nil, fmt.Errorf("session expired, please re-authenticate")
 		}
 		return nil, fmt.Errorf("failed to get current user: %v", err)
@@ -1620,8 +2018,36 @@ func (s *TelegramService) GetStatus() map[string]interface{} {
 		user, err := s.GetCurrentUser()
 		if err == nil {
 			status["user"] = user
+		} else {
+			// If GetCurrentUser fails, update the authentication status
+			s.mu.Lock()
+			s.userAuth = false
+			s.userID = 0
+			s.mu.Unlock()
+			status["authenticated"] = false
+			status["user_id"] = int64(0)
 		}
 	}
 
 	return status
+}
+
+// GracefulShutdown gracefully shuts down the service while preserving authentication state
+func (s *TelegramService) GracefulShutdown() {
+	s.logger.Info("Gracefully shutting down Telegram service while preserving auth state")
+
+	// Save current authentication state before shutdown
+	s.saveAuthState()
+
+	// Cancel current context to stop the client gracefully
+	s.mu.Lock()
+	if s.cancel != nil {
+		s.cancel()
+	}
+	s.mu.Unlock()
+
+	// Wait a moment for the client to fully close
+	time.Sleep(2 * time.Second)
+
+	s.logger.Info("Telegram service shutdown completed, auth state preserved")
 }
