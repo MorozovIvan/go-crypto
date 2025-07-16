@@ -102,8 +102,24 @@
         </div>
       </div>
 
+      <!-- Add this right before the Stats Overview section -->
+      <div class="flex justify-end mb-4">
+        <button
+          @click="showUniqueOnly = !showUniqueOnly"
+          class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          :class="showUniqueOnly ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
+        >
+          {{ showUniqueOnly ? 'Showing Unique Signals' : 'Showing All Signals' }}
+        </button>
+      </div>
+
       <!-- Stats Overview -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <div class="text-2xl font-bold text-gray-900">{{ filteredSignals }}</div>
+          <div class="text-sm text-gray-600">{{ showUniqueOnly ? 'Unique Signals' : 'Total Signals' }}</div>
+        </div>
+        
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <div class="flex items-center justify-between">
             <div>
@@ -193,7 +209,7 @@
         <div v-if="filteredChannels.length === 0 && !loadingChannels" class="p-12 text-center">
           <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
             </svg>
           </div>
           <h3 class="text-lg font-medium text-gray-900 mb-2">No Solana Signal Channels Found</h3>
@@ -225,7 +241,7 @@
               <div class="flex items-center space-x-6">
                 <!-- Signals Count -->
                 <div class="text-center">
-                  <div class="text-lg font-bold text-gray-900">{{ channel.signalCount || 0 }}</div>
+                  <div class="text-lg font-bold text-gray-900">{{ showUniqueOnly ? getUniqueSignalCount(channel) : getAllSignalCount(channel) }}</div>
                   <div class="text-xs text-gray-500">Signals</div>
                 </div>
                 
@@ -289,8 +305,8 @@
             <!-- Channel Stats -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div class="bg-gray-50 p-4 rounded-lg">
-                <div class="text-2xl font-bold text-gray-900">{{ selectedChannel.signalCount || 0 }}</div>
-                <div class="text-sm text-gray-600">Total Signals</div>
+                <div class="text-2xl font-bold text-gray-900">{{ modalSignalCount }}</div>
+                <div class="text-sm text-gray-600">{{ showUniqueOnlyModal ? 'Unique Signals' : 'Total Signals' }}</div>
               </div>
               <div class="bg-gray-50 p-4 rounded-lg">
                 <div class="text-2xl font-bold" :class="getWinRateColor(selectedChannel.winRate)">
@@ -310,156 +326,19 @@
               </div>
             </div>
             
-            <!-- Channel Productivity Chart -->
-            <div class="mb-6">
-              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-gray-900">
-                  Token Performance Chart ({{ selectedPeriod.toUpperCase() }})
-                </h3>
-                <!-- Chart Sorting Controls -->
-                <div class="flex items-center space-x-2">
-                  <span class="text-sm text-gray-600">Sort by:</span>
-                  <select 
-                    v-model="chartSortBy" 
-                    class="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="performance_asc">Current Performance (Low to High)</option>
-                    <option value="performance_desc">Current Performance (High to Low)</option>
-                    <option value="peak_asc">Peak Performance (Low to High)</option>
-                    <option value="peak_desc">Peak Performance (High to Low)</option>
-                    <option value="time_asc">Time (Oldest First)</option>
-                    <option value="time_desc">Time (Newest First)</option>
-                  </select>
-                </div>
-              </div>
-              <div v-if="getFilteredContracts(selectedChannel).length === 0" class="text-center py-8">
-                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                  </svg>
-                </div>
-                <p class="text-gray-500">No performance data available for the selected period</p>
-              </div>
-              <div v-else class="bg-gray-50 p-6 rounded-lg">
-                <!-- Chart Container -->
-                <div class="relative pl-12">
-                  <div class="flex items-end space-x-3 h-64 overflow-x-auto pb-4">
-                    <div 
-                      v-for="(contract, index) in sortedContracts" 
-                      :key="contract.address"
-                      class="flex flex-col items-center min-w-0 flex-shrink-0"
-                      style="width: 100px;"
-                    >
-                      <!-- Dual Bar Container -->
-                      <div class="relative flex flex-col justify-end h-48 mb-2">
-                        <!-- Peak Performance Bar (Background/Shadow) -->
-                        <div v-if="contract.max_performance !== undefined && contract.max_performance !== 'N/A'"
-                          class="absolute bottom-0 w-8 rounded-t-lg opacity-40 border-2 border-dashed"
-                          :style="getPeakBarStyle(contract.max_performance, sortedContracts)"
-                          :title="`${contract.token} Peak: ${getPeakMultiplierText(contract.max_performance)}`"
-                        >
-                          <!-- Peak performance label -->
-                          <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap text-blue-600">
-                            {{ getPeakMultiplierText(contract.max_performance) }}
-                          </div>
-                        </div>
-                        
-                        <!-- Current Performance Bar (Foreground) -->
-                        <div 
-                          class="w-6 rounded-t-lg transition-all duration-300 hover:opacity-80 cursor-pointer relative z-10"
-                          :style="getBarStyle(contract.performance, sortedContracts)"
-                          :title="`${contract.token} Current: ${getMultiplierText(contract.performance)}`"
-                        >
-                          <!-- Current performance label -->
-                          <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-semibold whitespace-nowrap"
-                               :class="contract.performance === 'N/A' ? 'text-gray-500' : contract.performance >= 0 ? 'text-green-700' : 'text-red-700'">
-                            {{ contract.performance === 'N/A' ? 'N/A' : getMultiplierText(contract.performance) }}
-                          </div>
-                        </div>
-                        
-                        <!-- Useful Signal Indicator -->
-                        <div v-if="contract.is_useful_signal" 
-                             class="absolute -right-2 top-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"
-                             title="Useful Signal - Reached profitable levels">
-                          <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-white rounded-full"></div>
-                        </div>
-                      </div>
-                      
-                      <!-- Token name -->
-                      <div class="text-xs font-medium text-gray-700 text-center truncate w-full px-1" 
-                           :title="contract.token">
-                        {{ contract.token.length > 10 ? contract.token.substring(0, 10) + '...' : contract.token }}
-                      </div>
-                      
-                      <!-- Performance percentages -->
-                      <div class="text-xs text-center mt-1 space-y-0.5">
-                        <!-- Current Performance -->
-                        <div class="text-gray-600">
-                          <span class="text-gray-400">Now:</span>
-                          {{ contract.performance === 'N/A' ? 'N/A' : (contract.performance >= 0 ? '+' : '') + Number(contract.performance || 0).toFixed(1) + '%' }}
-                        </div>
-                        <!-- Peak Performance -->
-                        <div v-if="contract.max_performance !== undefined && contract.max_performance !== 'N/A'" 
-                             class="text-blue-600 font-medium">
-                          <span class="text-gray-400">Peak:</span>
-                          {{ (contract.max_performance >= 0 ? '+' : '') + Number(contract.max_performance || 0).toFixed(1) + '%' }}
-                        </div>
-                      </div>
-                    </div>
+            <!-- Modal toggle button -->
+            <div class="flex justify-end mb-4">
+                  <button
+                @click="showUniqueOnlyModal = !showUniqueOnlyModal"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                :class="showUniqueOnlyModal ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
+              >
+                {{ showUniqueOnlyModal ? 'Showing Unique Signals' : 'Showing All Signals' }}
+                  </button>
                   </div>
-                  
-                  <!-- Y-axis labels (now inside the chart area) -->
-                  <div class="absolute left-0 top-0 h-48 flex flex-col justify-between text-xs text-gray-500 pr-2">
-                    <span v-for="label in getYAxisLabels(sortedContracts)" 
-                          :key="label" 
-                          class="text-right">
-                      {{ label }}
-                    </span>
-                  </div>
-                </div>
-                
-                <!-- Chart Legend -->
-                <div class="mt-4 flex flex-wrap gap-4 text-sm">
-                  <div class="flex items-center space-x-2">
-                    <div class="w-4 h-4 bg-gradient-to-r from-green-400 to-green-600 rounded"></div>
-                    <span class="text-gray-600">Current Profit (>0%)</span>
-                  </div>
-                  <div class="flex items-center space-x-2">
-                    <div class="w-4 h-4 bg-gradient-to-r from-red-400 to-red-600 rounded"></div>
-                    <span class="text-gray-600">Current Loss (<0%)</span>
-                  </div>
-                  <div class="flex items-center space-x-2">
-                    <div class="w-4 h-4 bg-gradient-to-r from-blue-300 to-blue-500 rounded opacity-40 border border-dashed border-blue-400"></div>
-                    <span class="text-gray-600">Peak Performance (Historical High)</span>
-                  </div>
-                  <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span class="text-gray-600">Useful Signal (Reached Profit)</span>
-                  </div>
-                  <div class="flex items-center space-x-2">
-                    <div class="w-4 h-4 bg-gradient-to-r from-gray-300 to-gray-500 rounded"></div>
-                    <span class="text-gray-600">No data / N/A</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Contract Addresses Section -->
-            <div class="mb-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                Solana Contract Addresses ({{ selectedPeriod.toUpperCase() }})
-              </h3>
-              <div v-if="getFilteredContracts(selectedChannel).length === 0" class="text-center py-8">
-                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                  </svg>
-                </div>
-                <p class="text-gray-500">No contract addresses found for the selected period</p>
-              </div>
-              <div v-else class="grid grid-cols-1 gap-3">
-                <div v-for="contract in getFilteredContracts(selectedChannel)" :key="contract.address" 
-                     class="p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
+            <!-- Token List -->
+            <div class="grid grid-cols-1 gap-3">
+              <div v-for="contract in modalSignals" :key="contract.address || contract.token + contract.signal_time" class="p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
                   <div class="flex items-center justify-between">
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center space-x-3 mb-2">
@@ -468,7 +347,24 @@
                         </div>
                         <div>
                           <h4 class="font-medium text-gray-900">{{ contract.token }}</h4>
-                          <p class="text-sm text-gray-500">{{ formatTimeAgo(contract.timestamp) }}</p>
+                        <p class="text-sm text-gray-500">{{ formatTimeAgo(contract.signal_time || contract.timestamp) }}</p>
+                      </div>
+                    </div>
+                    <!-- ATH, Call Price, and Time UI -->
+                    <div class="mb-2 text-xs text-gray-700">
+                      <div v-if="contract.max_price || contract.peak_price">
+                        <span class="font-semibold">ATH:</span>
+                        <span>
+                          ${{ (contract.max_price || contract.peak_price) ? formatNumber(contract.max_price || contract.peak_price) : 'N/A' }}
+                        </span>
+                        <span v-if="contract.entry_price || contract.signal_price">[{{ ((contract.max_price || contract.peak_price) && (contract.entry_price || contract.signal_price)) ? ((contract.max_price || contract.peak_price) / (contract.entry_price || contract.signal_price)).toFixed(2) : 'N/A' }}x]</span>
+                      </div>
+                      <div v-if="contract.signal_time || contract.timestamp">
+                        <span class="font-semibold">Called at:</span>
+                        <span>
+                          ${{ (contract.entry_price || contract.signal_price) ? formatNumber(contract.entry_price || contract.signal_price) : 'N/A' }}
+                        </span>
+                        <span class="ml-2">{{ (contract.signal_time || contract.timestamp) ? (new Date(contract.signal_time || contract.timestamp)).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '' }}</span>
                         </div>
                       </div>
                       <div class="flex items-center space-x-2 mb-2">
@@ -485,16 +381,27 @@
                           </svg>
                         </button>
                       </div>
-                      <div class="flex items-center space-x-4 text-sm">
-                        <span class="px-2 py-1 rounded text-xs font-medium" 
-                              :class="contract.type === 'BUY' ? 'bg-green-100 text-green-800' : contract.type === 'SELL' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'">
-                          {{ contract.type || 'SIGNAL' }}
-                        </span>
+                      <div class="flex flex-col space-y-2 text-sm">
+                        <div class="flex items-center space-x-2">
+                          <span class="px-2 py-1 rounded text-xs font-medium" 
+                                :class="contract.type === 'BUY' ? 'bg-green-100 text-green-800' : contract.type === 'SELL' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'">
+                            {{ contract.type || 'SIGNAL' }}
+                          </span>
+                        </div>
+                        
+                        <!-- Signal Context (Called at price, ATH, multiplier) -->
+                        <div v-if="contract.analysis_status === 'completed'" class="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                          {{ formatSignalContext(contract) }}
+                        </div>
+                        
                         <div class="space-y-1">
                           <!-- Current Performance -->
                           <div>
                             <span class="text-xs text-gray-500">Current:</span>
-                            <span v-if="contract.performance !== undefined && contract.performance !== null && contract.performance !== 'N/A'" class="font-medium ml-1" 
+                            <span v-if="contract.performance === 'NON_SOLANA'" class="font-medium ml-1 text-orange-600">
+                              Non-Solana Token
+                            </span>
+                            <span v-else-if="contract.performance !== undefined && contract.performance !== null && contract.performance !== 'N/A'" class="font-medium ml-1" 
                                   :class="contract.performance >= 0 ? 'text-green-600' : 'text-red-600'">
                               {{ contract.performance >= 0 ? '+' : '' }}{{ Number(contract.performance || 0).toFixed(1) }}%
                             </span>
@@ -515,17 +422,49 @@
                           <div v-if="contract.optimal_exit !== undefined && contract.optimal_exit !== 'N/A' && contract.optimal_exit !== contract.performance">
                             <span class="text-xs text-gray-500">Best Exit:</span>
                             <span class="font-medium ml-1" 
-                                  :class="contract.optimal_exit >= 0 ? 'text-green-600' : 'text-red-600'">
-                              {{ contract.optimal_exit >= 0 ? '+' : '' }}{{ Number(contract.optimal_exit || 0).toFixed(1) }}%
+                                  :class="formatOptimalExit(contract.optimal_exit).includes('+') ? 'text-green-600' : 'text-red-600'">
+                              {{ formatOptimalExit(contract.optimal_exit) }}
                             </span>
                           </div>
                         </div>
-                        <span v-if="contract.price" class="text-gray-600">
-                          ${{ contract.price }}
-                        </span>
                       </div>
                     </div>
-                    <div class="ml-4">
+                    <div class="ml-4 flex items-center space-x-2">
+                      <!-- Analysis Button -->
+                      <button 
+                        v-if="contract.analysis_status === 'pending' || contract.performance === 'Not analyzed'"
+                        @click="analyzeToken(contract)"
+                        :disabled="contract.analyzing"
+                        class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <svg v-if="contract.analyzing" class="animate-spin w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <svg v-else class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        {{ contract.analyzing ? 'Analyzing...' : 'Analyze' }}
+                      </button>
+                      
+                      <!-- Re-analyze Button (if already analyzed) -->
+                      <button 
+                        v-else-if="contract.analysis_status === 'completed'"
+                        @click="analyzeToken(contract)"
+                        :disabled="contract.analyzing"
+                        class="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <svg v-if="contract.analyzing" class="animate-spin w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <svg v-else class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        {{ contract.analyzing ? 'Re-analyzing...' : 'Re-analyze' }}
+                      </button>
+                      
+                      <!-- Solscan Link -->
                       <a 
                         :href="getSolscanLink(contract.address)" 
                         target="_blank" 
@@ -537,7 +476,6 @@
                         </svg>
                         Solscan
                       </a>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -587,7 +525,11 @@ export default {
         { label: '1M', value: '1m' }
       ],
       // Chart sorting
-      chartSortBy: 'performance_asc'
+      chartSortBy: 'performance_asc',
+      // Bulk analysis state
+      analyzingAll: false,
+      showUniqueOnly: true, // Add this line for the toggle state
+      showUniqueOnlyModal: true, // add for modal
     }
   },
   emits: ['connect', '2fa-required', 'logout'],
@@ -625,7 +567,20 @@ export default {
       }
     },
     totalSignals() {
-      return this.filteredChannels.reduce((sum, channel) => sum + (channel.signalCount || 0), 0)
+      return this.signalChannels.reduce((total, channel) => {
+        // Track unique tokens in this channel
+        const uniqueTokens = new Set();
+        
+        if (channel.recentSignals) {
+          channel.recentSignals.forEach(signal => {
+            // Use address as key if available, otherwise use symbol
+            const key = signal.address || `symbol:${signal.token}`;
+            uniqueTokens.add(key);
+          });
+        }
+        
+        return total + uniqueTokens.size;
+      }, 0);
     },
     overallWinRate() {
       if (this.filteredChannels.length === 0) return 0
@@ -640,6 +595,41 @@ export default {
     sortedContracts() {
       if (!this.selectedChannel) return []
       return this.getSortedContracts(this.selectedChannel)
+    },
+    filteredSignals() {
+      if (!this.showUniqueOnly) {
+        // Show all signals without deduplication
+        return this.signalChannels.reduce((total, channel) => {
+          return total + (channel.recentSignals?.length || 0)
+        }, 0)
+      }
+      
+      // Show only unique signals
+      const uniqueTokens = new Set()
+      this.signalChannels.forEach(channel => {
+        if (channel.recentSignals) {
+          channel.recentSignals.forEach(signal => {
+            const key = signal.address || `symbol:${signal.token}`
+            uniqueTokens.add(key)
+          })
+        }
+      })
+      return uniqueTokens.size
+    },
+    modalSignals() {
+      if (!this.selectedChannel || !this.selectedChannel.recentSignals) return [];
+      const signals = this.getFilteredContracts(this.selectedChannel);
+      if (!this.showUniqueOnlyModal) return signals;
+      // Deduplicate by address or symbol
+      const uniqueMap = new Map();
+      signals.forEach(signal => {
+        const key = signal.address || `symbol:${signal.token}`;
+        if (!uniqueMap.has(key)) uniqueMap.set(key, signal);
+      });
+      return Array.from(uniqueMap.values());
+    },
+    modalSignalCount() {
+      return this.modalSignals.length;
     }
   },
   watch: {
@@ -695,19 +685,17 @@ export default {
         console.log('API Response:', data) // Debug log
         
         if (data.success && data.channels) {
-          // Convert signal channels data to the format expected by the UI
+          // Simplified mapping - only use fields that are actually displayed/used
           this.signalChannels = data.channels.map(signalChannel => ({
             id: signalChannel.id,
             title: signalChannel.title,
             username: signalChannel.username,
-            type: signalChannel.type || 'channel',
             members: signalChannel.members || 0,
-            description: signalChannel.description || 'Solana Signal Channel',
             signalCount: signalChannel.signalCount || 0,
-            winRate: signalChannel.successRate || signalChannel.winRate || 0,
-            pnl: signalChannel.totalPnl || this.calculatePnlFromSignals(signalChannel.contractAddresses),
+            winRate: signalChannel.winRate || 0,
+            pnl: signalChannel.totalPnl || 0,
             lastSignal: signalChannel.lastActivity,
-            recentSignals: signalChannel.contractAddresses || [], // Map contractAddresses to recentSignals
+            recentSignals: signalChannel.contractAddresses || [],
             status: signalChannel.status || 'active'
           }))
           
@@ -722,23 +710,6 @@ export default {
       } finally {
         this.loadingChannels = false
       }
-    },
-
-    calculatePnlFromSignals(signals) {
-      if (!signals || signals.length === 0) return 0
-      
-      let totalPnl = 0
-      let validSignals = 0
-      
-      signals.forEach(signal => {
-        const performance = signal.performance
-        if (performance !== 'N/A' && performance !== null && performance !== undefined) {
-          totalPnl += Number(performance)
-          validSignals++
-        }
-      })
-      
-      return validSignals > 0 ? totalPnl / validSignals : 0
     },
 
     getPeriodHours(period) {
@@ -851,8 +822,22 @@ export default {
     },
     
     formatTimeAgo(timestamp) {
+      if (!timestamp) return 'Unknown time'
+      
       const now = new Date()
-      const diff = Math.floor((now - new Date(timestamp)) / 1000)
+      const signalTime = new Date(timestamp)
+      
+      // Check if the date is valid
+      if (isNaN(signalTime.getTime())) {
+        return 'Invalid date'
+      }
+      
+      const diff = Math.floor((now - signalTime) / 1000)
+      
+      // Handle negative diff (future dates)
+      if (diff < 0) {
+        return 'Future date'
+      }
       
       if (diff < 60) {
         return 'Just now'
@@ -870,6 +855,63 @@ export default {
         return Math.floor(diff / 86400) + ' days ago'
       }
     },
+
+    formatSignalContext(contract) {
+      // Format like: "Called at $0.000012, ATH: $0.000057 [4.75x]"
+      if (!contract.entry_price && !contract.signal_price) {
+        return 'Price data unavailable'
+      }
+      
+      const entryPrice = contract.entry_price || contract.signal_price || 0
+      const maxPrice = contract.max_price || contract.peak_price || entryPrice
+      
+      if (entryPrice === 0 || isNaN(entryPrice) || isNaN(maxPrice)) {
+        return 'Price data unavailable'
+      }
+      
+      const multiplier = maxPrice / entryPrice
+      if (isNaN(multiplier) || !isFinite(multiplier)) {
+        return 'Price data unavailable'
+      }
+      
+      const entryFormatted = this.formatPrice(entryPrice)
+      const maxFormatted = this.formatPrice(maxPrice)
+      
+      return `Called at ${entryFormatted}, ATH: ${maxFormatted} [${multiplier.toFixed(2)}x]`
+    },
+
+    formatPrice(price) {
+      if (!price || price === 0) return '$0.00'
+      
+      if (price >= 1) {
+        return `$${price.toFixed(2)}`
+      } else if (price >= 0.01) {
+        return `$${price.toFixed(4)}`
+      } else if (price >= 0.000001) {
+        return `$${price.toFixed(6)}`
+      } else {
+        return `$${price.toExponential(2)}`
+      }
+    },
+
+    formatOptimalExit(optimalExit) {
+      // Fix NaN% issues in optimal exit
+      if (!optimalExit || optimalExit === 'N/A' || optimalExit === 'NaN%' || optimalExit === 'Click analyze') {
+        return 'N/A'
+      }
+      
+      // If it's a string that contains NaN, return N/A
+      if (typeof optimalExit === 'string' && optimalExit.includes('NaN')) {
+        return 'N/A'
+      }
+      
+      // If it's a number, format as percentage
+      if (typeof optimalExit === 'number' && !isNaN(optimalExit)) {
+        return `${optimalExit >= 0 ? '+' : ''}${optimalExit.toFixed(1)}%`
+      }
+      
+      return optimalExit
+    },
     
     getFilteredContracts(channel) {
       if (!channel.recentSignals || channel.recentSignals.length === 0) return []
@@ -880,8 +922,7 @@ export default {
       return channel.recentSignals.filter(signal => {
         const signalTime = new Date(signal.signal_time || signal.timestamp)
         const isInPeriod = signalTime > cutoffTime
-        const isSolana = signal.blockchain === 'solana' || !signal.blockchain // Default to solana if not specified
-        return isInPeriod && isSolana
+        return isInPeriod
       })
     },
     
@@ -957,9 +998,139 @@ export default {
       document.execCommand('copy')
       document.body.removeChild(tempInput)
     },
+
+    async analyzeToken(contract) {
+      // Set analyzing state (Vue 3 style - direct assignment)
+      contract.analyzing = true
+      
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/telegram/analyze-token?contract=${encodeURIComponent(contract.address)}&signal_time=${encodeURIComponent(contract.signal_time)}&period=${encodeURIComponent(this.selectedPeriod)}`
+        )
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        if (data.success) {
+          // Update contract with analysis results (Vue 3 style - direct assignment)
+          contract.performance = data.performance
+          contract.max_performance = data.max_performance
+          contract.optimal_exit = data.optimal_exit
+          contract.is_useful_signal = data.is_useful_signal
+          contract.analysis_status = 'completed'
+          contract.analyzed_at = data.analyzed_at
+          
+          console.log(`Analysis completed for ${contract.address}:`, data)
+        } else {
+          console.error('Analysis failed:', data.error)
+          // Show error state
+          contract.performance = 'Analysis failed'
+          contract.max_performance = 'N/A'
+          contract.optimal_exit = 'Error'
+          contract.analysis_status = 'error'
+        }
+      } catch (error) {
+        console.error('Failed to analyze token:', error)
+        // Show error state
+        contract.performance = 'API Error'
+        contract.max_performance = 'N/A'
+        contract.optimal_exit = 'Error'
+        contract.analysis_status = 'error'
+      } finally {
+        contract.analyzing = false
+      }
+    },
+
+    async analyzeAllTokens(channel) {
+      if (!channel || !this.userInfo) return
+      
+      this.analyzingAll = true
+      
+      try {
+        console.log(`Starting bulk analysis for channel: ${channel.title}`)
+        
+        const response = await fetch(`${API_BASE_URL}/api/telegram/analyze-group-tokens`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            group_id: channel.id,
+            period: this.selectedPeriod,
+            user_id: this.userInfo.id.toString()
+          })
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        if (data.success) {
+          console.log(`Bulk analysis completed: ${data.successful_analyses}/${data.analyzed_tokens} tokens analyzed`)
+          
+          // Update the channel's contract data with analysis results
+          if (channel.recentSignals && data.results) {
+            // Create a map of results by contract address for quick lookup
+            const resultsMap = new Map()
+            data.results.forEach(result => {
+              resultsMap.set(result.contract_address, result)
+            })
+            
+            // Update each contract with analysis results
+            channel.recentSignals.forEach(contract => {
+              const result = resultsMap.get(contract.address)
+              if (result) {
+                contract.performance = result.performance
+                contract.max_performance = result.max_performance
+                contract.optimal_exit = result.optimal_exit
+                contract.is_useful_signal = result.is_useful_signal
+                contract.analysis_status = result.success ? 'completed' : 'error'
+                contract.analyzed_at = result.analyzed_at
+                
+                if (result.error) {
+                  contract.error = result.error
+                }
+              }
+            })
+            
+            // Recalculate channel stats based on updated performance data
+            const successfulSignals = channel.recentSignals.filter(s => 
+              s.performance !== 'N/A' && s.performance !== null && s.performance !== undefined && s.performance > 0
+            )
+            const totalSignals = channel.recentSignals.filter(s => 
+              s.performance !== 'N/A' && s.performance !== null && s.performance !== undefined
+            )
+            
+            if (totalSignals.length > 0) {
+              channel.winRate = (successfulSignals.length / totalSignals.length * 100).toFixed(1)
+              // PNL is now provided by the API, no need to recalculate
+            }
+          }
+          
+          // Show success message
+          this.$nextTick(() => {
+            alert(`Bulk analysis completed!\n\nResults:\n- ${data.analyzed_tokens} tokens found\n- ${data.successful_analyses} successfully analyzed\n- ${data.failed_analyses} failed analyses\n\nChannel performance data has been updated.`)
+          })
+        } else {
+          console.error('Bulk analysis failed:', data.error)
+          alert(`Bulk analysis failed: ${data.error || 'Unknown error'}`)
+        }
+      } catch (error) {
+        console.error('Failed to perform bulk analysis:', error)
+        alert(`Failed to perform bulk analysis: ${error.message}`)
+      } finally {
+        this.analyzingAll = false
+      }
+    },
     
     // Chart helper methods
     getMultiplierText(performance) {
+      if (performance === 'NON_SOLANA') return 'ETH'
       if (performance === null || performance === undefined || performance === 'N/A') return 'N/A'
       
       const multiplier = (100 + performance) / 100
@@ -970,6 +1141,19 @@ export default {
     },
     
     getBarStyle(performance, allContracts) {
+      // Handle NON_SOLANA tokens with special highlighting
+      if (performance === 'NON_SOLANA') {
+        return {
+          height: '40px',
+          background: 'repeating-linear-gradient(45deg, #F59E0B, #F59E0B 5px, #FCD34D 5px, #FCD34D 10px)',
+          minHeight: '40px',
+          border: '2px solid #D97706',
+          borderRadius: '6px',
+          position: 'relative',
+          animation: 'pulse 2s infinite'
+        }
+      }
+      
       if (performance === null || performance === undefined || performance === 'N/A') {
         return {
           height: '8px',
@@ -1158,6 +1342,24 @@ export default {
       if (peakMultiplier >= 10) return `x${peakMultiplier.toFixed(0)}`
       if (peakMultiplier >= 1) return `x${peakMultiplier.toFixed(2)}`
       return `x${peakMultiplier.toFixed(3)}`
+    },
+
+    // Add a method to compute unique signal count for a channel
+    getUniqueSignalCount(channel) {
+      const filteredSignals = this.getFilteredContracts(channel);
+      if (!filteredSignals || filteredSignals.length === 0) return 0;
+      const uniqueTokens = new Set();
+      filteredSignals.forEach(signal => {
+        const key = signal.address || `symbol:${signal.token}`;
+        uniqueTokens.add(key);
+      });
+      return uniqueTokens.size;
+    },
+
+    // Add a method to compute all signals count for a channel
+    getAllSignalCount(channel) {
+      const filteredSignals = this.getFilteredContracts(channel);
+      return filteredSignals ? filteredSignals.length : 0;
     }
   },
   

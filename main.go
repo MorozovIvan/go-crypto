@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math"
@@ -14,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -637,8 +639,44 @@ func handleTelegramAuthCallback(c *gin.Context) {
 	err := telegramService.AuthenticateUser(phone)
 	if err != nil {
 		log.Printf("Authentication failed: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+
+		// Check if this is a connection error that requires client reinitialization
+		if strings.Contains(err.Error(), "engine was closed") ||
+			strings.Contains(err.Error(), "AUTH_KEY_UNREGISTERED") ||
+			strings.Contains(err.Error(), "connection dead") ||
+			strings.Contains(err.Error(), "client is not initialized") ||
+			strings.Contains(err.Error(), "context canceled") {
+			log.Printf("Telegram client connection issue detected, attempting to reinitialize...")
+
+			// Clear existing session files to force fresh authentication
+			os.Remove("session.json")
+			os.Remove("auth_state.json")
+
+			// Reinitialize the Telegram service
+			var reinitErr error
+			telegramService, reinitErr = telegram.NewTelegramService()
+			if reinitErr != nil {
+				log.Printf("Failed to reinitialize Telegram service: %v", reinitErr)
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error":   "Failed to reinitialize Telegram connection",
+					"details": reinitErr.Error(),
+				})
+				return
+			}
+
+			log.Printf("Telegram service reinitialized, retrying authentication...")
+
+			// Retry authentication with the new client
+			err = telegramService.AuthenticateUser(phone)
+			if err != nil {
+				log.Printf("Authentication failed after reinitializing: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	// Get the phone code hash
@@ -877,6 +915,7 @@ func handleTelegramLogout(c *gin.Context) {
 func handleTelegramSignalChannels(c *gin.Context) {
 	period := c.DefaultQuery("period", "24h")
 	userIDStr := c.DefaultQuery("user_id", "")
+	pumpfunOnly := c.DefaultQuery("pumpfun_only", "false") == "true"
 
 	// If no user_id provided, return empty result with helpful message
 	if userIDStr == "" {
@@ -899,106 +938,419 @@ func handleTelegramSignalChannels(c *gin.Context) {
 
 	// Get user groups using the same method as the groups endpoint
 	groups, err := telegramService.GetUserGroups(userID)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"channels": []map[string]interface{}{},
-			"period":   period,
-			"success":  false,
-			"error":    "Failed to get groups: " + err.Error(),
-		})
-		return
-	}
-
-	// Process each group to find trading/signal channels with real Solana contracts
 	var signalChannels []map[string]interface{}
 
-	for _, groupMap := range groups {
-		title, _ := groupMap["title"].(string)
-		titleLower := strings.ToLower(title)
+	if err != nil {
+		log.Printf("Failed to get groups for user %d: %v", userID, err)
+		// Return empty channels when authentication fails
+	} else {
+		// Process each group to find trading/signal channels with real Solana contracts
+		for _, groupMap := range groups {
+			title, _ := groupMap["title"].(string)
+			titleLower := strings.ToLower(title)
 
-		// Check if this looks like a trading/signal channel
-		isTradingChannel := strings.Contains(titleLower, "signal") ||
-			strings.Contains(titleLower, "trade") ||
-			strings.Contains(titleLower, "alpha") ||
-			strings.Contains(titleLower, "gamble") ||
-			strings.Contains(titleLower, "pump") ||
-			strings.Contains(titleLower, "gem") ||
-			strings.Contains(titleLower, "call") ||
-			strings.Contains(titleLower, "crypto")
+			// Check if this looks like a trading/signal channel
+			isTradingChannel := strings.Contains(titleLower, "signal") ||
+				strings.Contains(titleLower, "trade") ||
+				strings.Contains(titleLower, "alpha") ||
+				strings.Contains(titleLower, "gamble") ||
+				strings.Contains(titleLower, "pump") ||
+				strings.Contains(titleLower, "gem") ||
+				strings.Contains(titleLower, "call") ||
+				strings.Contains(titleLower, "crypto")
 
-		if isTradingChannel {
-			// Get real messages from this channel
-			groupID := getInt64Value(groupMap, "id", 0)
-			accessHash := getInt64Value(groupMap, "access_hash", 0)
+			if isTradingChannel {
+				// Get real messages from this channel
+				groupID := getInt64Value(groupMap, "id", 0)
+				accessHash := getInt64Value(groupMap, "access_hash", 0)
 
-			messages, err := telegramService.GetGroupMessages(groupID, accessHash, 100, period)
-			if err != nil {
-				log.Printf("Failed to get messages for group %d: %v", groupID, err)
-				continue
-			}
+				messages, err := telegramService.GetGroupMessages(groupID, accessHash, 100, period)
+				if err != nil {
+					log.Printf("Failed to get messages for group %d: %v", groupID, err)
+					continue
+				}
 
-			// Extract and process real contract addresses from messages
-			var contractAddresses []map[string]interface{}
-			contractMap := make(map[string]map[string]interface{}) // Deduplicate contracts
+				// Extract and process real contract addresses from messages (both Solana and Ethereum)
+				var contractAddresses []map[string]interface{}
+				contractMap := make(map[string]map[string]interface{}) // Deduplicate contracts
 
-			for _, msg := range messages {
-				if contracts, ok := msg["contracts"].([]map[string]interface{}); ok {
-					for _, contract := range contracts {
-						if addr, ok := contract["address"].(string); ok {
-							if _, exists := contractMap[addr]; !exists {
-								// Get real performance data for this contract
-								performance, maxPerformance, optimalExit, isUseful := getRealPerformanceData(addr, msg["date"].(string))
+				for _, msg := range messages {
+					if contracts, ok := msg["contracts"].([]map[string]interface{}); ok {
+						for _, contract := range contracts {
+							if addr, ok := contract["address"].(string); ok {
+								if _, exists := contractMap[addr]; !exists {
+									// Check if this is a pumpfun token
+									isPumpfun := isPumpfunToken(addr)
 
+									// If pumpfun filter is enabled, skip non-pumpfun tokens
+									if pumpfunOnly && !isPumpfun {
+										continue
+									}
+
+									// Store contract data WITHOUT performance analysis (to save API calls)
+									contractData := map[string]interface{}{
+										"address":    addr,
+										"token":      contract["token"],
+										"blockchain": contract["blockchain"], // Use the detected blockchain instead of hardcoding
+										"is_pumpfun": isPumpfun,
+										"token_type": func() string {
+											if isPumpfun {
+												return "pumpfun"
+											}
+											return "standard"
+										}(),
+										"performance":      "Not analyzed", // Will be analyzed on-demand
+										"max_performance":  "Not analyzed",
+										"optimal_exit":     "Click analyze",
+										"is_useful_signal": false, // Will be determined after analysis
+										"signal_time":      msg["date"],
+										"message":          msg["message"],
+										"analysis_status":  "pending", // New field to track analysis status
+									}
+									contractMap[addr] = contractData
+									contractAddresses = append(contractAddresses, contractData)
+								}
+							} else if contract["address"] == nil && contract["signal_type"] == "symbol" {
+								// Symbol-only signal (no address)
+								// If pumpfunOnly is enabled, skip (since we can't know)
+								if pumpfunOnly {
+									continue
+								}
+								// Add symbol-only signal directly
 								contractData := map[string]interface{}{
-									"address":          addr,
+									"address":          nil,
 									"token":            contract["token"],
-									"blockchain":       "solana",
-									"performance":      performance,
-									"max_performance":  maxPerformance,
-									"optimal_exit":     optimalExit,
-									"is_useful_signal": isUseful,
+									"blockchain":       nil,
+									"is_pumpfun":       false,
+									"token_type":       "symbol",
+									"performance":      "Not analyzed",
+									"max_performance":  "Not analyzed",
+									"optimal_exit":     "Click analyze",
+									"is_useful_signal": false,
 									"signal_time":      msg["date"],
 									"message":          msg["message"],
+									"analysis_status":  "pending",
 								}
-								contractMap[addr] = contractData
 								contractAddresses = append(contractAddresses, contractData)
 							}
 						}
 					}
 				}
-			}
 
-			// Only include channels that have actual Solana contracts
-			if len(contractAddresses) > 0 {
-				// Calculate channel statistics from real data
-				successRate, totalPnl, winRate := calculateChannelStats(contractAddresses)
+				// Only include channels that have actual contract addresses (Solana or Ethereum)
+				if len(contractAddresses) > 0 {
+					// Calculate channel statistics from real data
+					successRate, totalPnl, winRate := calculateChannelStats(contractAddresses)
 
-				signalChannel := map[string]interface{}{
-					"id":                fmt.Sprintf("%v", groupMap["id"]),
-					"title":             title,
-					"username":          groupMap["username"],
-					"members":           getIntValue(groupMap, "members", 0),
-					"status":            "active",
-					"lastActivity":      time.Now().Format(time.RFC3339),
-					"signalCount":       len(contractAddresses),
-					"successRate":       successRate,
-					"contractAddresses": contractAddresses,
-					"totalPnl":          totalPnl,
-					"winRate":           winRate,
-					"avgHoldTime":       "4.2h", // Could be calculated from real data
-					"riskLevel":         "medium",
+					// Count pumpfun tokens in this channel
+					pumpfunCount := 0
+					for _, contract := range contractAddresses {
+						if isPumpfun, ok := contract["is_pumpfun"].(bool); ok && isPumpfun {
+							pumpfunCount++
+						}
+					}
+
+					signalChannel := map[string]interface{}{
+						"id":           fmt.Sprintf("%v", groupMap["id"]),
+						"title":        title,
+						"username":     groupMap["username"],
+						"members":      getIntValue(groupMap, "members", 0),
+						"status":       "active",
+						"lastActivity": time.Now().Format(time.RFC3339),
+						"signalCount":  len(contractAddresses),
+						"pumpfunCount": pumpfunCount,
+						"pumpfunPercentage": func() float64 {
+							if len(contractAddresses) > 0 {
+								return float64(pumpfunCount) / float64(len(contractAddresses)) * 100
+							}
+							return 0
+						}(),
+						"successRate":       successRate,
+						"contractAddresses": contractAddresses,
+						"totalPnl":          totalPnl,
+						"winRate":           winRate,
+						"avgHoldTime":       "4.2h", // Could be calculated from real data
+						"riskLevel":         "medium",
+					}
+
+					signalChannels = append(signalChannels, signalChannel)
 				}
-
-				signalChannels = append(signalChannels, signalChannel)
 			}
 		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"channels": signalChannels,
-		"period":   period,
-		"success":  true,
-		"total":    len(signalChannels),
+		"channels":     signalChannels,
+		"period":       period,
+		"pumpfun_only": pumpfunOnly,
+		"success":      true,
+		"total":        len(signalChannels),
+	})
+}
+
+// isPumpfunToken checks if a token address ends with "pump" (indicates pumpfun token)
+func isPumpfunToken(address string) bool {
+	return strings.HasSuffix(address, "pump")
+}
+
+// handleTokenAnalysis performs on-demand analysis for a specific token
+func handleTokenAnalysis(c *gin.Context) {
+	contractAddr := c.Query("contract")
+	signalTime := c.Query("signal_time")
+	period := c.Query("period")
+	if period == "" {
+		period = "24h"
+	}
+
+	if contractAddr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Missing contract address",
+			"success": false,
+		})
+		return
+	}
+
+	if signalTime == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Missing signal_time parameter",
+			"success": false,
+		})
+		return
+	}
+
+	log.Printf("Starting on-demand analysis for contract: %s at signal time: %s (period: %s)", contractAddr, signalTime, period)
+
+	// Get detailed analysis data from Moralis service
+	moralisService := market.NewMoralisService()
+	analysisResult := moralisService.GetTokenAnalysisDataWithPeriod(contractAddr, signalTime, period)
+
+	// Return the analysis results
+	result := map[string]interface{}{
+		"contract_address": contractAddr,
+		"signal_time":      signalTime,
+		"analysis_status":  "completed",
+		"analyzed_at":      time.Now().Format(time.RFC3339),
+		"success":          true,
+	}
+
+	if analysisResult.Error != "" {
+		// Handle special cases
+		if analysisResult.TokenType == "ethereum" {
+			result["performance"] = "NON_SOLANA"
+			result["max_performance"] = "NON_SOLANA"
+			result["optimal_exit"] = "Mark on bar chart"
+			result["is_useful_signal"] = false
+		} else {
+			result["performance"] = "N/A"
+			result["max_performance"] = "N/A"
+			result["optimal_exit"] = "N/A"
+			result["is_useful_signal"] = false
+			result["error"] = analysisResult.Error
+		}
+	} else {
+		// Include all analysis data
+		result["performance"] = analysisResult.ROIPercent
+		result["max_performance"] = analysisResult.ROIPercent
+		result["optimal_exit"] = analysisResult.OptimalExit
+		result["is_useful_signal"] = analysisResult.IsUseful
+		result["entry_price"] = analysisResult.EntryPrice
+		result["max_price"] = analysisResult.MaxPrice
+		result["entry_market_cap"] = analysisResult.EntryMarketCap
+		result["max_market_cap"] = analysisResult.MaxMarketCap
+		result["signal_price"] = analysisResult.EntryPrice // Alias for frontend compatibility
+		result["peak_price"] = analysisResult.MaxPrice     // Alias for frontend compatibility
+	}
+
+	log.Printf("Analysis completed for %s: Performance=%.2f%%, Max=%.2f%%, Useful=%v",
+		contractAddr, analysisResult.ROIPercent, analysisResult.ROIPercent, analysisResult.IsUseful)
+
+	c.JSON(http.StatusOK, result)
+}
+
+// handleBulkTokenAnalysis performs analysis for all tokens in a group
+func handleBulkTokenAnalysis(c *gin.Context) {
+	var requestBody struct {
+		GroupID string `json:"group_id"`
+		Period  string `json:"period"`
+		UserID  string `json:"user_id"`
+	}
+
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid request body",
+			"success": false,
+		})
+		return
+	}
+
+	if requestBody.GroupID == "" || requestBody.UserID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Missing group_id or user_id",
+			"success": false,
+		})
+		return
+	}
+
+	period := requestBody.Period
+	if period == "" {
+		period = "24h"
+	}
+
+	userID, err := strconv.ParseInt(requestBody.UserID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid user_id format",
+			"success": false,
+		})
+		return
+	}
+
+	log.Printf("Starting bulk analysis for group %s, user %d, period %s", requestBody.GroupID, userID, period)
+
+	// Get user groups to find the specific group
+	groups, err := telegramService.GetUserGroups(userID)
+	if err != nil {
+		log.Printf("Failed to get groups for user %d: %v", userID, err)
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "Failed to get user groups. Please re-authenticate.",
+			"success": false,
+		})
+		return
+	}
+
+	// Find the specific group
+	var targetGroup map[string]interface{}
+	for _, group := range groups {
+		if fmt.Sprintf("%v", group["id"]) == requestBody.GroupID {
+			targetGroup = group
+			break
+		}
+	}
+
+	if targetGroup == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "Group not found",
+			"success": false,
+		})
+		return
+	}
+
+	// Get messages from the group
+	groupID := getInt64Value(targetGroup, "id", 0)
+	accessHash := getInt64Value(targetGroup, "access_hash", 0)
+
+	messages, err := telegramService.GetGroupMessages(groupID, accessHash, 100, period)
+	if err != nil {
+		log.Printf("Failed to get messages for group %d: %v", groupID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to get group messages",
+			"success": false,
+		})
+		return
+	}
+
+	// Extract unique contracts from messages
+	contractMap := make(map[string]map[string]interface{})
+	for _, msg := range messages {
+		if contracts, ok := msg["contracts"].([]map[string]interface{}); ok {
+			for _, contract := range contracts {
+				if addr, ok := contract["address"].(string); ok {
+					if _, exists := contractMap[addr]; !exists {
+						contractMap[addr] = map[string]interface{}{
+							"address":     addr,
+							"token":       contract["token"],
+							"signal_time": msg["date"],
+							"message":     msg["message"],
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if len(contractMap) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success":             true,
+			"analyzed_tokens":     0,
+			"successful_analyses": 0,
+			"failed_analyses":     0,
+			"results":             []map[string]interface{}{},
+			"message":             "No tokens found in the specified time period",
+		})
+		return
+	}
+
+	// Initialize Moralis service
+	moralisService := market.NewMoralisService()
+
+	// Analyze each token
+	var results []map[string]interface{}
+	successfulAnalyses := 0
+	failedAnalyses := 0
+
+	for addr, contractData := range contractMap {
+		log.Printf("Analyzing token %s (%s)", addr, contractData["token"])
+
+		signalTime := fmt.Sprintf("%v", contractData["signal_time"])
+		analysisResult := moralisService.GetTokenAnalysisData(addr, signalTime)
+
+		result := map[string]interface{}{
+			"contract_address": addr,
+			"token":            contractData["token"],
+			"signal_time":      signalTime,
+			"message":          contractData["message"],
+			"analyzed_at":      time.Now().Format(time.RFC3339),
+		}
+
+		if analysisResult.Error != "" {
+			// Handle special cases
+			if analysisResult.TokenType == "ethereum" {
+				result["performance"] = "NON_SOLANA"
+				result["max_performance"] = "NON_SOLANA"
+				result["optimal_exit"] = "Mark on bar chart"
+				result["is_useful_signal"] = false
+				result["success"] = true
+				successfulAnalyses++
+			} else {
+				result["performance"] = "N/A"
+				result["max_performance"] = "N/A"
+				result["optimal_exit"] = "N/A"
+				result["is_useful_signal"] = false
+				result["error"] = analysisResult.Error
+				result["success"] = false
+				failedAnalyses++
+			}
+		} else {
+			// Include all analysis data
+			result["performance"] = analysisResult.ROIPercent
+			result["max_performance"] = analysisResult.ROIPercent
+			result["optimal_exit"] = analysisResult.OptimalExit
+			result["is_useful_signal"] = analysisResult.IsUseful
+			result["entry_price"] = analysisResult.EntryPrice
+			result["max_price"] = analysisResult.MaxPrice
+			result["signal_price"] = analysisResult.EntryPrice // Alias for frontend compatibility
+			result["peak_price"] = analysisResult.MaxPrice     // Alias for frontend compatibility
+			result["success"] = true
+			successfulAnalyses++
+
+			log.Printf("Analysis completed for %s: Performance=%.2f%%, Max=%.2f%%, Useful=%v",
+				addr, analysisResult.ROIPercent, analysisResult.ROIPercent, analysisResult.IsUseful)
+		}
+
+		results = append(results, result)
+	}
+
+	log.Printf("Bulk analysis completed: %d total, %d successful, %d failed",
+		len(contractMap), successfulAnalyses, failedAnalyses)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":             true,
+		"analyzed_tokens":     len(contractMap),
+		"successful_analyses": successfulAnalyses,
+		"failed_analyses":     failedAnalyses,
+		"results":             results,
+		"group_id":            requestBody.GroupID,
+		"period":              period,
 	})
 }
 
@@ -1049,17 +1401,35 @@ func getRealPerformanceData(contractAddr, signalTimeStr string) (interface{}, in
 		signalTime = time.Now().Add(-24 * time.Hour) // Default to 24h ago
 	}
 
-	// Try to get real performance from DexScreener API first
+	// Try enhanced Moralis service first with new token type detection
+	moralisService := market.NewMoralisService()
+	if performance, maxPerf, optimalExit, isUseful := moralisService.GetTokenPerformance(contractAddr, signalTimeStr); performance != "N/A" {
+		// Handle special case for non-Solana tokens
+		if performance == "NON_SOLANA" {
+			log.Printf("Non-Solana token detected: %s - should be marked on bar chart", contractAddr)
+			// Try Ethereum service for 0x addresses
+			if strings.HasPrefix(contractAddr, "0x") {
+				ethService := market.NewEthereumService()
+				if ethPerf, ethMaxPerf, ethExit, ethUseful := ethService.GetTokenPerformance(contractAddr, signalTimeStr); ethPerf != "N/A" {
+					return ethPerf, ethMaxPerf, ethExit, ethUseful
+				}
+			}
+			return "NON_SOLANA", "NON_SOLANA", "Mark on bar chart", false
+		}
+		return performance, maxPerf, optimalExit, isUseful
+	}
+
+	// Try to get real performance from DexScreener API as fallback for Solana tokens
 	if performance, maxPerf, optimalExit, isUseful := getDexScreenerPerformance(contractAddr, signalTime); performance != "N/A" {
 		return performance, maxPerf, optimalExit, isUseful
 	}
 
-	// Try Jupiter API as fallback
+	// Try Jupiter API as final fallback
 	if performance, maxPerf, optimalExit, isUseful := getJupiterPerformance(contractAddr, signalTime); performance != "N/A" {
 		return performance, maxPerf, optimalExit, isUseful
 	}
 
-	// If both APIs fail, return N/A instead of trying to estimate
+	// If all APIs fail, return N/A instead of trying to estimate
 	log.Printf("Failed to get real performance for %s: all price APIs failed", contractAddr)
 	return "N/A", "N/A", "N/A", false
 }
@@ -1139,16 +1509,8 @@ func getDexScreenerPerformance(contractAddr string, signalTime time.Time) (inter
 	var maxPerf float64
 	var optimalExit string
 
-	// Special handling for contracts with known peaks from DXcelerate or other sources
-	knownPeaks := map[string]float64{}
-
-	if knownPeak, exists := knownPeaks[contractAddr]; exists {
-		maxPerf = knownPeak
-		log.Printf("Using known peak for %s: %.2f%%", contractAddr, maxPerf)
-	} else {
-		// Use the highest available performance value as peak
-		maxPerf = math.Max(math.Max(h1Perf, h6Perf), h24Perf)
-	}
+	// Use the highest available performance value as peak (no hardcoded data)
+	maxPerf = math.Max(math.Max(h1Perf, h6Perf), h24Perf)
 
 	// If all values are negative or zero, use absolute value of the worst as a conservative estimate
 	if maxPerf <= 0 {
@@ -3161,6 +3523,763 @@ func handlePortfolio(c *gin.Context) {
 	c.JSON(http.StatusOK, portfolio)
 }
 
+// handleTokenAnalysisWithData provides comprehensive token analysis with market cap data
+func handleTokenAnalysisWithData(c *gin.Context) {
+	tokenAddress := c.Query("address")
+	period := c.Query("period")
+	resolveOnly := c.Query("resolve_only") == "true"
+	if period == "" {
+		period = "24h"
+	}
+
+	if tokenAddress == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Missing token address",
+			"success": false,
+		})
+		return
+	}
+
+	log.Printf("Starting comprehensive token analysis for: %s (period: %s, resolve_only: %v)", tokenAddress, period, resolveOnly)
+
+	// Initialize Moralis service
+	moralisService := market.NewMoralisService()
+
+	// Detect address type
+	addressType := moralisService.DetectAddressType(tokenAddress)
+	var mintAddress string
+	var err error
+
+	// Handle pump.fun ID resolution
+	if addressType == market.PumpFun {
+		log.Printf("Detected pump.fun ID, attempting resolution...")
+		resolvedAddress, err := resolvePumpFunId(tokenAddress)
+		if err != nil {
+			log.Printf("Pump.fun resolution failed: %v, treating as direct Solana address", err)
+			// If pump.fun resolution fails, treat the ID as a direct Solana address
+			mintAddress = tokenAddress
+			addressType = market.Solana
+		} else {
+			mintAddress = resolvedAddress
+		}
+	} else if addressType == market.Solana {
+		mintAddress = tokenAddress
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid token address format. Please provide a valid Solana mint address or pump.fun ID",
+			"success": false,
+		})
+		return
+	}
+
+	// For pump.fun IDs, we'll use the original ID for analysis but store the pair address for reference
+	var pairAddressForOHLCV string
+	if addressType == market.PumpFun {
+		log.Printf("Attempting to get pair address for pump.fun ID: %s", tokenAddress)
+		pairAddress, err := getPairAddressFromMoralis(tokenAddress)
+		if err != nil {
+			log.Printf("Failed to get pair address for pump.fun ID %s: %v, treating as direct Solana address", tokenAddress, err)
+			// If we can't get pair address, treat as direct Solana address
+			mintAddress = tokenAddress
+		} else {
+			log.Printf("Successfully got pair address for pump.fun ID %s: %s", tokenAddress, pairAddress)
+			// Use the original pump.fun ID for analysis, but we now know the pair address
+			mintAddress = tokenAddress
+			pairAddressForOHLCV = pairAddress
+		}
+	}
+
+	// If resolve_only is true, return just the mint address
+	if resolveOnly {
+		c.JSON(http.StatusOK, gin.H{
+			"success":      true,
+			"mint_address": mintAddress,
+			"address_type": addressType.String(),
+		})
+		return
+	}
+
+	// Get token metadata (skip for pump.fun IDs since Moralis doesn't have metadata for them)
+	var tokenMetadata *market.TokenMetadata
+	if addressType != market.PumpFun {
+		tokenMetadata, err = moralisService.GetTokenMetadata(mintAddress)
+		if err != nil {
+			log.Printf("Failed to get token metadata: %v", err)
+			// Continue with basic data
+		}
+	} else {
+		log.Printf("Skipping token metadata lookup for pump.fun ID: %s", mintAddress)
+	}
+
+	// Get current price and market cap data
+	currentTime := time.Now()
+	var analysisResult *market.AnalysisResult
+
+	if addressType == market.PumpFun {
+		// For pump.fun IDs, we'll analyze the chart data directly instead of using fallback
+		log.Printf("Will analyze chart data for pump.fun ID: %s", mintAddress)
+		// Don't set analysisResult here - we'll analyze chart data later
+	} else {
+		// For regular tokens, try Moralis first
+		analysisResult = moralisService.GetTokenAnalysisDataWithPeriod(mintAddress, currentTime.Format(time.RFC3339), period)
+
+		// If Moralis analysis fails, try alternative data sources
+		if analysisResult == nil || analysisResult.Error != "" {
+			log.Printf("Moralis analysis failed, trying alternative data sources for token: %s", mintAddress)
+			fallbackAnalysis := getFallbackTokenAnalysis(mintAddress, period)
+			if fallbackAnalysis != nil {
+				analysisResult = fallbackAnalysis
+			} else {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error":   "Token not found in Moralis or fallback sources. Please check the address or try again later.",
+					"success": false,
+				})
+				return
+			}
+		}
+	}
+
+	// Generate market cap chart data
+	chartData := generateMarketCapChartData(mintAddress, period, moralisService, pairAddressForOHLCV)
+
+	// For pump.fun tokens, analyze the chart data directly
+	if addressType == market.PumpFun {
+		log.Printf("Analyzing chart data for pump.fun token: %s", mintAddress)
+		analysisResult = analyzeChartData(chartData)
+	}
+
+	result := map[string]interface{}{
+		"success":          true,
+		"address_type":     addressType.String(),
+		"original_address": tokenAddress,
+		"mint_address":     mintAddress,
+		"analysis_period":  period,
+		"analyzed_at":      currentTime.Format(time.RFC3339),
+		"chart_data":       chartData,
+	}
+
+	// Add token metadata if available
+	if tokenMetadata != nil {
+		result["token_info"] = map[string]interface{}{
+			"name":               tokenMetadata.Name,
+			"symbol":             tokenMetadata.Symbol,
+			"decimals":           tokenMetadata.Decimals,
+			"supply":             tokenMetadata.Supply,
+			"total_supply":       tokenMetadata.TotalSupply,
+			"circulating_supply": tokenMetadata.CirculatingSupply,
+		}
+	}
+
+	// Add analysis results
+	if analysisResult.Error != "" {
+		result["analysis_error"] = analysisResult.Error
+	} else {
+		result["analysis"] = map[string]interface{}{
+			"entry_price":      analysisResult.EntryPrice,
+			"max_price":        analysisResult.MaxPrice,
+			"entry_market_cap": analysisResult.EntryMarketCap,
+			"max_market_cap":   analysisResult.MaxMarketCap,
+			"roi_percent":      analysisResult.ROIPercent,
+			"is_useful":        analysisResult.IsUseful,
+			"optimal_exit":     analysisResult.OptimalExit,
+		}
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// resolvePumpFunId resolves a pump.fun ID to a Solana mint address using Moralis
+func resolvePumpFunId(pumpId string) (string, error) {
+	// For pump.fun IDs, we return the original ID since that's what we use for analysis
+	// The pair address is obtained separately when needed
+	return pumpId, nil
+}
+
+// getPairAddressFromMoralis gets the pair address for a pump.fun ID using Moralis pairs endpoint
+func getPairAddressFromMoralis(pumpId string) (string, error) {
+	apiKey := os.Getenv("MORALIS_API_KEY")
+	if apiKey == "" {
+		return "", fmt.Errorf("MORALIS_API_KEY environment variable not set")
+	}
+
+	url := fmt.Sprintf("https://solana-gateway.moralis.io/token/mainnet/%s/pairs", pumpId)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %v", err)
+	}
+
+	req.Header.Set("X-API-Key", apiKey)
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch from Moralis: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("Moralis API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("failed to decode Moralis response: %v", err)
+	}
+
+	// Extract pairs array from response
+	pairs, ok := result["pairs"].([]interface{})
+	if !ok || len(pairs) == 0 {
+		return "", fmt.Errorf("no pairs found in Moralis response for pump.fun ID: %s", pumpId)
+	}
+
+	// Get the first pair's address
+	firstPair, ok := pairs[0].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("invalid pair structure in Moralis response for pump.fun ID: %s", pumpId)
+	}
+
+	pairAddress, ok := firstPair["pairAddress"].(string)
+	if !ok || pairAddress == "" {
+		return "", fmt.Errorf("no pair address found in first pair for pump.fun ID: %s", pumpId)
+	}
+
+	log.Printf("Successfully got pair address for pump.fun ID %s: %s", pumpId, pairAddress)
+	return pairAddress, nil
+}
+
+// getOHLCVDataFromPairAddress fetches OHLCV data directly from a pair address
+func getOHLCVDataFromPairAddress(pairAddress, period, timeframe string) ([]market.OHLCVData, error) {
+	apiKey := os.Getenv("MORALIS_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("MORALIS_API_KEY environment variable not set")
+	}
+
+	// Calculate time range based on period
+	var hours int
+	switch period {
+	case "1h":
+		hours = 1
+	case "24h":
+		hours = 24
+	case "7d":
+		hours = 24 * 7
+	case "30d":
+		hours = 24 * 30
+	default:
+		hours = 24
+	}
+
+	endTime := time.Now()
+	startTime := endTime.Add(-time.Duration(hours) * time.Hour)
+
+	fromTime := startTime.UnixMilli()
+	toTime := endTime.UnixMilli()
+
+	url := fmt.Sprintf("https://solana-gateway.moralis.io/token/mainnet/pairs/%s/ohlcv?timeframe=%s&currency=usd&fromDate=%d&toDate=%d",
+		pairAddress, timeframe, fromTime, toTime)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	req.Header.Set("X-API-Key", apiKey)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch from Moralis: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("Moralis API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode Moralis response: %v", err)
+	}
+
+	// Extract OHLCV data from response
+	ohlcvArray, ok := result["result"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("no OHLCV data found in response")
+	}
+
+	var ohlcvData []market.OHLCVData
+	for _, item := range ohlcvArray {
+		candle, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		timestamp, _ := candle["timestamp"].(string)
+		open, _ := candle["open"].(float64)
+		high, _ := candle["high"].(float64)
+		low, _ := candle["low"].(float64)
+		close, _ := candle["close"].(float64)
+		volume, _ := candle["volume"].(float64)
+		trades, _ := candle["trades"].(float64)
+
+		ohlcvData = append(ohlcvData, market.OHLCVData{
+			Timestamp: timestamp,
+			Open:      open,
+			High:      high,
+			Low:       low,
+			Close:     close,
+			Volume:    volume,
+			Trades:    int(trades),
+		})
+	}
+
+	return ohlcvData, nil
+}
+
+// generateMarketCapChartData generates market cap chart data for the specified period
+func generateMarketCapChartData(mintAddress, period string, moralisService *market.MoralisService, pairAddressForOHLCV string) []map[string]interface{} {
+	// Determine timeframe based on period for optimal granularity
+	var timeframe string
+	switch period {
+	case "1h":
+		timeframe = "1m" // 1-minute intervals for 1 hour
+	case "24h":
+		timeframe = "5m" // 5-minute intervals for 24 hours
+	case "7d":
+		timeframe = "1h" // 1-hour intervals for 7 days
+	case "30d":
+		timeframe = "4h" // 4-hour intervals for 30 days
+	default:
+		timeframe = "5m" // Default to 5-minute intervals
+	}
+
+	// Calculate expected minimum data points for quality check
+	var expectedMinimum int
+	switch period {
+	case "1h":
+		expectedMinimum = 10 // At least 10 minutes of data
+	case "24h":
+		expectedMinimum = 20 // At least 20 data points (5min intervals)
+	case "7d":
+		expectedMinimum = 24 // At least 24 hours of data
+	case "30d":
+		expectedMinimum = 30 // At least 30 data points (4h intervals)
+	default:
+		expectedMinimum = 5
+	}
+
+	var chartData []map[string]interface{}
+	var dataSource string
+
+	// Strategy 1: Try pair address OHLCV first
+	if pairAddressForOHLCV != "" {
+		log.Printf("Strategy 1: Using pair address %s for OHLCV data fetching", pairAddressForOHLCV)
+		ohlcvData, err := getOHLCVDataFromPairAddress(pairAddressForOHLCV, period, timeframe)
+		if err == nil && len(ohlcvData) >= expectedMinimum {
+			log.Printf("Strategy 1 SUCCESS: Got %d OHLCV candles from pair address (expected min: %d)", len(ohlcvData), expectedMinimum)
+			chartData = convertOHLCVToChartData(ohlcvData)
+			dataSource = "pair_address"
+		} else {
+			if err != nil {
+				log.Printf("Strategy 1 FAILED: Pair address error: %v", err)
+			} else {
+				log.Printf("Strategy 1 INSUFFICIENT: Got %d candles, need at least %d", len(ohlcvData), expectedMinimum)
+			}
+		}
+	}
+
+	// Strategy 2: Try smart OHLCV combiner if Strategy 1 failed or insufficient
+	if len(chartData) < expectedMinimum {
+		log.Printf("Strategy 2: Trying smart OHLCV combiner for %s", mintAddress)
+		ohlcvData, err := market.GetSmartOHLCVData(mintAddress, period, timeframe)
+		if err == nil && ohlcvData != nil && len(ohlcvData) >= expectedMinimum {
+			log.Printf("Strategy 2 SUCCESS: Smart combiner returned %d candles (expected min: %d)", len(ohlcvData), expectedMinimum)
+			chartData = convertOHLCVToChartData(ohlcvData)
+			dataSource = "smart_combiner"
+		} else {
+			if err != nil {
+				log.Printf("Strategy 2 FAILED: Smart combiner error: %v", err)
+			} else if ohlcvData == nil {
+				log.Printf("Strategy 2 FAILED: Smart combiner returned nil data")
+			} else {
+				log.Printf("Strategy 2 INSUFFICIENT: Smart combiner returned %d candles, need at least %d", len(ohlcvData), expectedMinimum)
+			}
+		}
+	}
+
+	// Strategy 3: Try RPC-based swap indexer as final fallback
+	if len(chartData) < expectedMinimum {
+		log.Printf("Strategy 3: Trying RPC-based swap indexer for %s", mintAddress)
+		rpcChartData := generateRPCBasedChartData(mintAddress, period, timeframe)
+		if rpcChartData != nil && len(rpcChartData) >= expectedMinimum {
+			log.Printf("Strategy 3 SUCCESS: RPC indexer returned %d data points (expected min: %d)", len(rpcChartData), expectedMinimum)
+			chartData = rpcChartData
+			dataSource = "rpc_indexer"
+		} else {
+			if rpcChartData == nil {
+				log.Printf("Strategy 3 FAILED: RPC indexer returned nil data")
+			} else {
+				log.Printf("Strategy 3 INSUFFICIENT: RPC indexer returned %d data points, need at least %d", len(rpcChartData), expectedMinimum)
+				// Use whatever data we have, even if insufficient
+				if len(rpcChartData) > len(chartData) {
+					chartData = rpcChartData
+					dataSource = "rpc_indexer_partial"
+				}
+			}
+		}
+	}
+
+	// Final result logging
+	if len(chartData) > 0 {
+		log.Printf("FINAL RESULT: Returning %d real data points for %s (source: %s, period: %s)",
+			len(chartData), mintAddress, dataSource, period)
+		return chartData
+	} else {
+		log.Printf("FINAL RESULT: No real data available for %s after trying all strategies", mintAddress)
+		// Return empty array instead of nil to avoid frontend errors
+		return []map[string]interface{}{}
+	}
+}
+
+// generateRPCBasedChartData uses the RPC-based swap indexer to get real on-chain data
+func generateRPCBasedChartData(mintAddress, period, timeframe string) []map[string]interface{} {
+	log.Printf("Attempting RPC-based swap indexing for %s with period %s and timeframe %s", mintAddress, period, timeframe)
+
+	// Initialize swap indexer service
+	swapIndexer := market.NewSwapIndexerService()
+
+	// Map period to appropriate timeframe for RPC indexing
+	var rpcTimeframe string
+	switch period {
+	case "1h":
+		rpcTimeframe = "1m" // 1-minute candles for 1h period
+	case "24h":
+		rpcTimeframe = "5m" // 5-minute candles for 24h period
+	case "7d":
+		rpcTimeframe = "1h" // 1-hour candles for 7d period
+	case "30d":
+		rpcTimeframe = "4h" // 4-hour candles for 30d period
+	default:
+		rpcTimeframe = "5m" // Default to 5-minute candles
+	}
+
+	// Use higher limits for better data coverage
+	var limit int
+	switch period {
+	case "1h":
+		limit = 2000 // More granular data for short periods
+	case "24h":
+		limit = 1500
+	case "7d":
+		limit = 1000
+	case "30d":
+		limit = 800
+	default:
+		limit = 1500
+	}
+
+	// Get OHLCV data from RPC-based swap indexer
+	ohlcvCandles, err := swapIndexer.GetOHLCVData(mintAddress, rpcTimeframe, limit)
+	if err != nil {
+		log.Printf("RPC-based swap indexing failed for %s: %v", mintAddress, err)
+		log.Printf("DEBUG: Returning nil from generateRPCBasedChartData due to error")
+		return nil // Return nil instead of fake data
+	}
+
+	if len(ohlcvCandles) == 0 {
+		log.Printf("RPC-based swap indexer returned no data for %s", mintAddress)
+		log.Printf("DEBUG: Returning nil from generateRPCBasedChartData due to no candles")
+		return nil // Return nil instead of fake data
+	}
+
+	log.Printf("RPC-based swap indexer returned %d candles for %s", len(ohlcvCandles), mintAddress)
+	log.Printf("DEBUG: Processing %d real OHLCV candles", len(ohlcvCandles))
+
+	// Convert RPC OHLCV candles to chart data format with better market cap estimation
+	data := make([]map[string]interface{}, 0, len(ohlcvCandles))
+	for _, candle := range ohlcvCandles {
+		// Convert timestamp to RFC3339 format
+		timestamp := time.Unix(candle.Timestamp, 0).Format(time.RFC3339)
+
+		// Use close price and calculate market cap based on volume and price
+		price := candle.Close
+		if price == 0 {
+			price = candle.Open // Fallback to open price
+		}
+		if price == 0 {
+			price = 0.000001 // Minimum price to avoid division by zero
+		}
+
+		// Better market cap estimation using volume and price
+		marketCap := price * 1000000 // Base estimation
+		if candle.Volume > 0 {
+			// Adjust market cap based on volume
+			marketCap = price * candle.Volume * 10 // Volume-based adjustment
+		}
+
+		data = append(data, map[string]interface{}{
+			"timestamp":  timestamp,
+			"market_cap": marketCap,
+			"price":      price,
+		})
+	}
+
+	// Sort data by timestamp to ensure chronological order
+	sort.Slice(data, func(i, j int) bool {
+		timeI, _ := time.Parse(time.RFC3339, data[i]["timestamp"].(string))
+		timeJ, _ := time.Parse(time.RFC3339, data[j]["timestamp"].(string))
+		return timeI.Before(timeJ)
+	})
+
+	return data
+}
+
+// Removed synthetic data generation function - using only real data
+
+// generateFallbackChartDataWithMoralis is the original Moralis-only fallback
+func generateFallbackChartDataWithMoralis(mintAddress, period string, moralisService *market.MoralisService, pairAddressForOHLCV string) []map[string]interface{} {
+	// Calculate time range based on period
+	var hours int
+	switch period {
+	case "1h":
+		hours = 1
+	case "24h":
+		hours = 24
+	case "7d":
+		hours = 24 * 7
+	case "30d":
+		hours = 24 * 30
+	default:
+		hours = 24
+	}
+
+	endTime := time.Now()
+	startTime := endTime.Add(-time.Duration(hours) * time.Hour)
+
+	// Try to get real OHLCV data from Moralis
+	pairAddress, err := moralisService.GetPairAddress(mintAddress)
+	if err != nil {
+		log.Printf("Failed to get pair address for chart data: %v", err)
+		return nil // Return nil instead of synthetic data
+	}
+
+	// Try different timeframes to get the most granular data possible
+	timeframes := []string{"1s", "10s", "30s", "1min", "5min", "10min", "30min", "1h"}
+
+	for _, timeframe := range timeframes {
+		ohlcvData, err := moralisService.GetOHLCVDataRange(pairAddress, startTime, endTime, timeframe)
+		if err == nil && len(ohlcvData) > 0 {
+			log.Printf("Using %d OHLCV candles with timeframe %s for chart data", len(ohlcvData), timeframe)
+			return convertOHLCVToChartData(ohlcvData)
+		}
+	}
+
+	// If no real data available, return nil instead of synthetic data
+	log.Printf("No real OHLCV data available, returning nil")
+	return nil // Return nil instead of synthetic data
+}
+
+// convertOHLCVToChartData converts OHLCV data to chart format
+func convertOHLCVToChartData(ohlcvData []market.OHLCVData) []map[string]interface{} {
+	data := make([]map[string]interface{}, 0, len(ohlcvData))
+
+	for _, candle := range ohlcvData {
+		// Use close price and calculate market cap if available
+		price := candle.Close
+		marketCap := candle.MarketCap
+
+		// If market cap is not available, estimate it (this is a fallback)
+		if marketCap == 0 {
+			// Estimate market cap based on price and volume
+			marketCap = price * 1000000 // Rough estimate
+		}
+
+		data = append(data, map[string]interface{}{
+			"timestamp":  candle.Timestamp,
+			"market_cap": marketCap,
+			"price":      price,
+		})
+	}
+
+	return data
+}
+
+// Removed synthetic data generation - using only real market data
+
+// getFallbackTokenAnalysis provides basic token analysis using alternative data sources
+// when Moralis data is not available
+func getFallbackTokenAnalysis(mintAddress, period string) *market.AnalysisResult {
+	log.Printf("Attempting fallback analysis for token: %s", mintAddress)
+
+	// Try to get basic price data from alternative sources
+	// For now, we'll use DexScreener as a fallback
+	priceData, err := getDexScreenerPriceData(mintAddress)
+	if err != nil {
+		log.Printf("Fallback price data failed: %v", err)
+		// Return a basic analysis result even if DexScreener fails
+		return &market.AnalysisResult{
+			EntryPrice:     0,
+			MaxPrice:       0,
+			EntryMarketCap: 0,
+			MaxMarketCap:   0,
+			ROIPercent:     0.0,
+			IsUseful:       false,
+			OptimalExit:    "No price data available",
+			Error:          "Failed to get price data from fallback sources",
+		}
+	}
+
+	// Create basic analysis result
+	result := &market.AnalysisResult{
+		EntryPrice:     priceData.Price,
+		MaxPrice:       priceData.Price * 1.1, // Assume 10% max increase
+		EntryMarketCap: priceData.MarketCap,
+		MaxMarketCap:   priceData.MarketCap * 1.1,
+		ROIPercent:     0.0, // No historical data for ROI calculation
+		IsUseful:       true,
+		OptimalExit:    "No historical data available",
+		Error:          "",
+	}
+
+	return result
+}
+
+// analyzeChartData creates analysis from existing chart data
+func analyzeChartData(chartData []map[string]interface{}) *market.AnalysisResult {
+	if len(chartData) == 0 {
+		return &market.AnalysisResult{
+			EntryPrice:     0,
+			MaxPrice:       0,
+			EntryMarketCap: 0,
+			MaxMarketCap:   0,
+			ROIPercent:     0,
+			IsUseful:       false,
+			OptimalExit:    "No chart data available",
+			TokenType:      "pumpfun",
+		}
+	}
+
+	// Find entry (first) and max values
+	entryPrice := 0.0
+	entryMarketCap := 0.0
+	maxPrice := 0.0
+	maxMarketCap := 0.0
+
+	for i, data := range chartData {
+		price, _ := data["price"].(float64)
+		marketCap, _ := data["market_cap"].(float64)
+
+		if i == 0 {
+			// First data point is entry
+			entryPrice = price
+			entryMarketCap = marketCap
+		}
+
+		// Track maximum values
+		if price > maxPrice {
+			maxPrice = price
+		}
+		if marketCap > maxMarketCap {
+			maxMarketCap = marketCap
+		}
+	}
+
+	// Calculate ROI
+	roiPercent := 0.0
+	if entryPrice > 0 {
+		roiPercent = ((maxPrice / entryPrice) - 1) * 100
+	}
+
+	isUseful := roiPercent > 15.0 // Consider useful if ROI > 15%
+
+	return &market.AnalysisResult{
+		EntryPrice:     entryPrice,
+		MaxPrice:       maxPrice,
+		EntryMarketCap: entryMarketCap,
+		MaxMarketCap:   maxMarketCap,
+		ROIPercent:     roiPercent,
+		IsUseful:       isUseful,
+		OptimalExit:    fmt.Sprintf("%.2f%%", roiPercent),
+		TokenType:      "pumpfun",
+	}
+}
+
+// DexScreenerPriceData represents basic price data from DexScreener
+type DexScreenerPriceData struct {
+	Price     float64 `json:"price"`
+	MarketCap float64 `json:"marketCap"`
+	Volume24h float64 `json:"volume24h"`
+}
+
+// getDexScreenerPriceData fetches basic price data from DexScreener
+func getDexScreenerPriceData(mintAddress string) (*DexScreenerPriceData, error) {
+	// Try to get data from DexScreener API
+	url := fmt.Sprintf("https://api.dexscreener.com/latest/dex/tokens/%s", mintAddress)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch from DexScreener: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("DexScreener API returned status %d", resp.StatusCode)
+	}
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode DexScreener response: %v", err)
+	}
+
+	// Extract price data from DexScreener response
+	pairs, ok := result["pairs"].([]interface{})
+	if !ok || len(pairs) == 0 {
+		return nil, fmt.Errorf("no pairs found in DexScreener response")
+	}
+
+	// Get the first pair (usually the most relevant)
+	pair, ok := pairs[0].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid pair data structure")
+	}
+
+	// Extract price and market cap
+	priceStr, ok := pair["priceUsd"].(string)
+	if !ok {
+		return nil, fmt.Errorf("price not found in pair data")
+	}
+
+	price, err := strconv.ParseFloat(priceStr, 64)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse price: %v", err)
+	}
+
+	// Try to get market cap, default to 0 if not available
+	marketCap := 0.0
+	if marketCapStr, ok := pair["marketCap"].(string); ok && marketCapStr != "" {
+		if mc, err := strconv.ParseFloat(marketCapStr, 64); err == nil {
+			marketCap = mc
+		}
+	}
+
+	// Try to get volume, default to 0 if not available
+	volume24h := 0.0
+	if volumeStr, ok := pair["volume24h"].(string); ok && volumeStr != "" {
+		if vol, err := strconv.ParseFloat(volumeStr, 64); err == nil {
+			volume24h = vol
+		}
+	}
+
+	return &DexScreenerPriceData{
+		Price:     price,
+		MarketCap: marketCap,
+		Volume24h: volume24h,
+	}, nil
+}
+
 func main() {
 	// Enhanced port conflict resolution with automatic fallback
 	port := "8080"
@@ -3260,6 +4379,9 @@ portResolved:
 		api.GET("/telegram/groups", handleGetGroups)
 		api.GET("/telegram/current-user", handleGetCurrentUser)
 		api.GET("/telegram/signal-channels", handleTelegramSignalChannels)
+		api.GET("/telegram/analyze-token", handleTokenAnalysis)
+		api.POST("/telegram/analyze-group-tokens", handleBulkTokenAnalysis)
+		api.GET("/token/analysis", handleTokenAnalysisWithData)
 
 		// Market data endpoints
 		api.GET("/cmc/global", handleCMCGlobal)

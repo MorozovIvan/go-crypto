@@ -679,6 +679,11 @@ func (s *TelegramService) GetGroupMessages(groupID int64, accessHash int64, limi
 		sinceTime = time.Now().Add(-24 * time.Hour)
 	}
 
+	// Set fetch limit to 300 if less
+	if limit < 300 {
+		limit = 300
+	}
+
 	// Get messages from the group/channel
 	var inputPeer tg.InputPeerClass
 	if accessHash != 0 {
@@ -711,12 +716,12 @@ func (s *TelegramService) GetGroupMessages(groupID int64, accessHash int64, limi
 		for _, msg := range m.Messages {
 			if message, ok := msg.(*tg.Message); ok {
 				messageTime := time.Unix(int64(message.Date), 0)
+				// DEBUG: Print every fetched message's timestamp and text
+				fmt.Printf("[DEBUG] Fetched message at %s: %s\n", messageTime.Format("2006-01-02 15:04:05"), message.Message)
 				if messageTime.Before(sinceTime) {
 					continue // Skip messages older than the specified period
 				}
-
 				if message.Message != "" {
-					// Extract potential Solana contract addresses
 					contracts := s.extractSolanaContracts(message.Message)
 					if len(contracts) > 0 {
 						result = append(result, map[string]interface{}{
@@ -734,12 +739,12 @@ func (s *TelegramService) GetGroupMessages(groupID int64, accessHash int64, limi
 		for _, msg := range m.Messages {
 			if message, ok := msg.(*tg.Message); ok {
 				messageTime := time.Unix(int64(message.Date), 0)
+				// DEBUG: Print every fetched message's timestamp and text
+				fmt.Printf("[DEBUG] Fetched message at %s: %s\n", messageTime.Format("2006-01-02 15:04:05"), message.Message)
 				if messageTime.Before(sinceTime) {
 					continue // Skip messages older than the specified period
 				}
-
 				if message.Message != "" {
-					// Extract potential Solana contract addresses
 					contracts := s.extractSolanaContracts(message.Message)
 					if len(contracts) > 0 {
 						result = append(result, map[string]interface{}{
@@ -757,12 +762,12 @@ func (s *TelegramService) GetGroupMessages(groupID int64, accessHash int64, limi
 		for _, msg := range m.Messages {
 			if message, ok := msg.(*tg.Message); ok {
 				messageTime := time.Unix(int64(message.Date), 0)
+				// DEBUG: Print every fetched message's timestamp and text
+				fmt.Printf("[DEBUG] Fetched message at %s: %s\n", messageTime.Format("2006-01-02 15:04:05"), message.Message)
 				if messageTime.Before(sinceTime) {
 					continue // Skip messages older than the specified period
 				}
-
 				if message.Message != "" {
-					// Extract potential Solana contract addresses
 					contracts := s.extractSolanaContracts(message.Message)
 					if len(contracts) > 0 {
 						result = append(result, map[string]interface{}{
@@ -783,37 +788,181 @@ func (s *TelegramService) GetGroupMessages(groupID int64, accessHash int64, limi
 	return result, nil
 }
 
-// extractSolanaContracts extracts potential Solana contract addresses from message text
+// extractSolanaContracts extracts potential Solana and Ethereum contract addresses from message text
 func (s *TelegramService) extractSolanaContracts(messageText string) []map[string]interface{} {
 	var contracts []map[string]interface{}
+	foundSymbols := map[string]bool{}
 
-	// Simple pattern matching for Solana addresses (32-44 characters, alphanumeric)
-	words := strings.Fields(messageText)
-	for _, word := range words {
-		// Check if word looks like a Solana address (32-44 characters, alphanumeric)
-		if len(word) >= 32 && len(word) <= 44 {
-			isValidAddress := true
-			for _, char := range word {
-				if !((char >= 'A' && char <= 'Z') || (char >= 'a' && char <= 'z') || (char >= '0' && char <= '9')) {
-					isValidAddress = false
-					break
-				}
-			}
+	// DEBUG LOG: Print the message being processed
+	fmt.Println("[DEBUG] Processing message:")
+	fmt.Println(messageText)
 
-			if isValidAddress {
-				// Try to extract token name from surrounding context
-				tokenName := s.extractTokenName(messageText, word)
+	// Use regex patterns to find both Solana and Ethereum addresses
+	// Pattern 1: Ethereum addresses (0x followed by 40 hex characters)
+	ethPattern := `0x[a-fA-F0-9]{40}`
+	ethRegex := regexp.MustCompile(ethPattern)
+	ethMatches := ethRegex.FindAllString(messageText, -1)
+	for _, address := range ethMatches {
+		tokenName := s.extractTokenName(messageText, address)
+		contracts = append(contracts, map[string]interface{}{
+			"address":     address,
+			"token":       tokenName,
+			"blockchain":  "ethereum",
+			"is_pumpfun":  false,
+			"signal_type": "address",
+		})
+		if tokenName != "" {
+			foundSymbols[tokenName] = true
+		}
+	}
 
-				contracts = append(contracts, map[string]interface{}{
-					"address":    word,
-					"token":      tokenName,
-					"blockchain": "solana",
-				})
+	// Pattern 2: Solana addresses (32-44 characters, base58 characters)
+	solanaPattern := `[1-9A-HJ-NP-Za-km-z]{32,44}`
+	solanaRegex := regexp.MustCompile(solanaPattern)
+	solanaMatches := solanaRegex.FindAllString(messageText, -1)
+	for _, address := range solanaMatches {
+		if s.isValidSolanaAddress(address) {
+			tokenName := s.extractTokenName(messageText, address)
+			isPumpfun := strings.HasSuffix(address, "pump")
+			contracts = append(contracts, map[string]interface{}{
+				"address":     address,
+				"token":       tokenName,
+				"blockchain":  "solana",
+				"is_pumpfun":  isPumpfun,
+				"signal_type": "address",
+			})
+			if tokenName != "" {
+				foundSymbols[tokenName] = true
 			}
 		}
 	}
 
+	// Pattern 3: Look for addresses in common prefixes (CA:, Contract:, Address:, etc.)
+	prefixPatterns := []string{
+		// Solana
+		`(?i)(?:CA|Ca|Contract|Address|Mint|Token|Pair|Wallet|Tx)[-: .]+([1-9A-HJ-NP-Za-km-z]{32,44})`,
+		// Ethereum
+		`(?i)(?:CA|Ca|Contract|Address|Mint|Token|Pair|Wallet|Tx)[-: .]+(0x[a-fA-F0-9]{40})`,
+		// Allow for just a space as separator
+		`(?i)(?:CA|Ca|Contract|Address|Mint|Token|Pair|Wallet|Tx)\s+([1-9A-HJ-NP-Za-km-z]{32,44})`,
+		`(?i)(?:CA|Ca|Contract|Address|Mint|Token|Pair|Wallet|Tx)\s+(0x[a-fA-F0-9]{40})`,
+	}
+	for _, pattern := range prefixPatterns {
+		prefixRegex := regexp.MustCompile(pattern)
+		prefixMatches := prefixRegex.FindAllStringSubmatch(messageText, -1)
+		for _, match := range prefixMatches {
+			if len(match) > 1 {
+				address := match[1]
+				var blockchain string
+				var isPumpfun bool
+				if strings.HasPrefix(address, "0x") && len(address) == 42 {
+					blockchain = "ethereum"
+					isPumpfun = false
+				} else if len(address) >= 32 && len(address) <= 44 && s.isValidSolanaAddress(address) {
+					blockchain = "solana"
+					isPumpfun = strings.HasSuffix(address, "pump")
+				} else {
+					continue // Skip invalid addresses
+				}
+				alreadyExists := false
+				for _, existing := range contracts {
+					if existing["address"] == address {
+						alreadyExists = true
+					break
+				}
+			}
+				if !alreadyExists {
+					tokenName := s.extractTokenName(messageText, address)
+					contracts = append(contracts, map[string]interface{}{
+						"address":     address,
+						"token":       tokenName,
+						"blockchain":  blockchain,
+						"is_pumpfun":  isPumpfun,
+						"signal_type": "address",
+					})
+					if tokenName != "" {
+						foundSymbols[tokenName] = true
+					}
+				}
+			}
+		}
+	}
+
+	// Pattern 4: Extract $SYMBOL signals (even if no address is present)
+	// Improved pattern to catch more symbols including numbers and longer names
+	symbolPattern := `\$([A-Za-z][A-Za-z0-9]{1,20})`
+	symbolRegex := regexp.MustCompile(symbolPattern)
+	symbolMatches := symbolRegex.FindAllStringSubmatch(messageText, -1)
+
+	fmt.Printf("[DEBUG] Symbol extraction - found %d matches\n", len(symbolMatches))
+
+	for _, match := range symbolMatches {
+		if len(match) > 1 {
+			symbol := match[1]
+			// Skip common base currencies and very short symbols
+			commonSymbols := []string{"USD", "USDT", "USDC", "DAI", "BUSD", "SOL", "ETH", "BTC", "TON"}
+			isCommon := false
+			for _, common := range commonSymbols {
+				if strings.EqualFold(symbol, common) {
+					isCommon = true
+					break
+				}
+			}
+
+			if !isCommon && len(symbol) >= 2 {
+				// Check if we already have this symbol with an address
+				hasAddress := false
+				for _, contract := range contracts {
+					if contract["token"] == symbol && contract["address"] != nil && contract["address"] != "" {
+						hasAddress = true
+						break
+					}
+				}
+
+				// Only add symbol-only if we don't have it with an address
+				if !hasAddress {
+					fmt.Printf("[DEBUG] Added symbol-only signal: $%s\n", symbol)
+				contracts = append(contracts, map[string]interface{}{
+						"address":     nil,
+						"token":       symbol,
+						"blockchain":  nil,
+						"is_pumpfun":  false,
+						"signal_type": "symbol",
+					})
+				}
+			}
+		}
+	}
+
+	// After all extraction logic, print the extracted contracts
+	if len(contracts) > 0 {
+		fmt.Println("[DEBUG] Extracted tokens/addresses:")
+		for _, c := range contracts {
+			fmt.Printf("  address: %v, token: %v, blockchain: %v\n", c["address"], c["token"], c["blockchain"])
+			}
+	} else {
+		fmt.Println("[DEBUG] No tokens/addresses extracted from this message.")
+	}
+
 	return contracts
+}
+
+// isValidSolanaAddress validates if a string is a valid Solana address
+func (s *TelegramService) isValidSolanaAddress(address string) bool {
+	// Length check
+	if len(address) < 32 || len(address) > 44 {
+		return false
+	}
+
+	// Character validation for Base58
+	validChars := "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+	for _, char := range address {
+		if !strings.ContainsRune(validChars, char) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // extractTokenName tries to extract a token name from the message context
@@ -858,12 +1007,22 @@ func (s *TelegramService) extractTokenName(messageText, contractAddress string) 
 		}
 	}
 
-	// Pattern 3: "Token Name NEW ALERT" or "Token Name 🔥" format
+	// Pattern 3: "Token Name 🔥" or similar patterns from telegram messages
 	alertPatterns := []string{
-		`^([A-Za-z][A-Za-z0-9\s]{1,25}[A-Za-z0-9])\s+NEW\s+ALERT`,
-		`^([A-Za-z][A-Za-z0-9\s]{1,25}[A-Za-z0-9])\s+🔥`,
-		`^([A-Za-z][A-Za-z0-9\s]{1,25}[A-Za-z0-9])\s+ALERT`,
-		`^([A-Za-z][A-Za-z0-9\s]{1,25}[A-Za-z0-9])\s+PUMP`,
+		// Pattern: "Token Name 🔥" at start of line
+		`^([A-Za-z][A-Za-z0-9\s]{1,30}[A-Za-z0-9])\s+🔥`,
+		// Pattern: "Token Name NEW ALERT"
+		`^([A-Za-z][A-Za-z0-9\s]{1,30}[A-Za-z0-9])\s+NEW\s+ALERT`,
+		// Pattern: "Token Name ALERT"
+		`^([A-Za-z][A-Za-z0-9\s]{1,30}[A-Za-z0-9])\s+ALERT`,
+		// Pattern: "Token Name PUMP"
+		`^([A-Za-z][A-Za-z0-9\s]{1,30}[A-Za-z0-9])\s+PUMP`,
+		// Pattern: "Token Name (emoji)" at start of line
+		`^([A-Za-z][A-Za-z0-9\s]{1,30}[A-Za-z0-9])\s+[🔥💎🚀⚡🎯🟢🔴⭐💥🎉🎊]`,
+		// Pattern: Lines ending with fire emoji
+		`([A-Za-z][A-Za-z0-9\s]{1,30}[A-Za-z0-9])\s+🔥\s*$`,
+		// Pattern: Token name before "New launch"
+		`([A-Za-z][A-Za-z0-9\s]{1,30}[A-Za-z0-9])\s+🔥\s*\n\s*New\s+launch`,
 	}
 
 	for _, pattern := range alertPatterns {
@@ -896,7 +1055,32 @@ func (s *TelegramService) extractTokenName(messageText, contractAddress string) 
 		}
 	}
 
-	// Pattern 5: Look for text before the contract address
+	// Pattern 5: Specific patterns for telegram signal format
+	specificPatterns := []string{
+		// Pattern: "TokenName 🔥\n\nNew launch on sol"
+		`([A-Za-z][A-Za-z0-9\s]{1,30}[A-Za-z0-9])\s+🔥\s*\n\s*New\s+launch\s+on\s+(sol|eth)`,
+		// Pattern: "🏏 🔥\n\nNew launch" (for tokens with just emoji names)
+		`([🏏🔥💎🚀⚡🎯🟢🔴⭐💥🎉🎊]+)\s+🔥\s*\n\s*New\s+launch`,
+		// Pattern: Token name followed by "Launched on eth"
+		`([A-Za-z][A-Za-z0-9\s]{1,30}[A-Za-z0-9])\s+🔥\s*\n\s*Launched\s+on\s+(eth|sol)`,
+		// Pattern: Generic token before "New launch"
+		`([A-Za-z][A-Za-z0-9\s]{1,30}[A-Za-z0-9])\s*\n\s*New\s+launch`,
+	}
+
+	for _, pattern := range specificPatterns {
+		re := regexp.MustCompile(pattern)
+		if matches := re.FindStringSubmatch(text); len(matches) > 1 {
+			tokenName := strings.TrimSpace(matches[1])
+			// Clean common symbols and prefixes
+			tokenName = strings.Trim(tokenName, "🚀💎🔥-:.,!?()[]{}\"'")
+			if len(tokenName) > 1 && len(tokenName) <= 30 {
+				s.logger.Debug("Found token name using specific pattern", zap.String("token", tokenName))
+				return tokenName
+			}
+		}
+	}
+
+	// Pattern 6: Look for text before the contract address
 	upperText := strings.ToUpper(text)
 	contractIndex := strings.Index(upperText, strings.ToUpper(contractAddress))
 	if contractIndex > 0 {
@@ -912,8 +1096,8 @@ func (s *TelegramService) extractTokenName(messageText, contractAddress string) 
 
 			// Remove common prefixes and suffixes
 			cleanLine := line
-			prefixesToRemove := []string{"🚀", "💎", "🔥", "NEW", "FRESH", "HOT", "BUY", "SELL", "PUMP", "MOON", "GEM", "COIN", "TOKEN", "MINT:", "CONTRACT:", "ADDRESS:", "CA:"}
-			suffixesToRemove := []string{"CA:", "CONTRACT:", "ADDRESS:", "MINT:", "-", ":", "🚀", "💎", "🔥"}
+			prefixesToRemove := []string{"🚀", "💎", "🔥", "NEW", "FRESH", "HOT", "BUY", "SELL", "PUMP", "MOON", "GEM", "COIN", "TOKEN", "MINT:", "CONTRACT:", "ADDRESS:", "CA:", "New", "launch", "on", "sol", "eth", "low", "cap", "Dyor"}
+			suffixesToRemove := []string{"CA:", "CONTRACT:", "ADDRESS:", "MINT:", "-", ":", "🚀", "💎", "🔥", "New", "launch", "Dyor"}
 
 			// Clean prefixes
 			words := strings.Fields(cleanLine)
@@ -1373,7 +1557,7 @@ func (s *TelegramService) VerifyCode(phoneForVerify, code string) error {
 				done <- fmt.Errorf("code expired, new code sent, but unexpected response type")
 				return
 			}
-			done <- s.formatError(err) // Format other errors
+			done <- fmt.Errorf("code expired, new code sent, but unexpected response type")
 			return
 		}
 		if auth == nil {

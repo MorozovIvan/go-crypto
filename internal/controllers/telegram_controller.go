@@ -206,78 +206,54 @@ func (c *TelegramController) GetSignalChannels(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Analyze each group for Solana signals
+	// Process each group
 	var signalChannels []map[string]interface{}
 
 	for _, group := range groups {
-		// For now, we'll simulate message analysis since getting actual messages
-		// requires additional Telegram API calls. In production, you would:
-		// 1. Get recent messages from the channel using GetHistory
-		// 2. Analyze each message for Solana contract addresses
-		// 3. Calculate success rates and performance metrics
-
-		// Simulate analyzing messages for Solana signals
-		// Check if this is likely a trading/signal channel based on title/description
-		title := strings.ToLower(group["title"].(string))
-		description := ""
-		if desc, ok := group["description"].(string); ok {
-			description = strings.ToLower(desc)
+		groupID := group["id"].(int64)
+		accessHash := int64(0)
+		if hash, ok := group["access_hash"].(int64); ok {
+			accessHash = hash
 		}
 
-		isTradingChannel := strings.Contains(title, "trade") ||
-			strings.Contains(title, "signal") ||
-			strings.Contains(title, "alpha") ||
-			strings.Contains(title, "call") ||
-			strings.Contains(title, "gem") ||
-			strings.Contains(title, "pump") ||
-			strings.Contains(title, "solana") ||
-			strings.Contains(title, "defi") ||
-			strings.Contains(title, "gamble") ||
-			strings.Contains(description, "trading") ||
-			strings.Contains(description, "signals")
-
-		if !isTradingChannel {
+		// Get messages and extract signals
+		messages, err := c.telegramService.GetGroupMessages(groupID, accessHash, 300, period)
+		if err != nil {
 			continue
 		}
 
-		// Convert group ID to string for consistency
-		groupID := strconv.FormatInt(group["id"].(int64), 10)
+		// Deduplicate signals across all messages
+		uniqueSignals := make(map[string]map[string]interface{})
+		var allSignals []map[string]interface{}
 
-		// Simulate Solana signals found in this channel
-		mockSignals := []map[string]interface{}{
-			{
-				"id":              "sig_" + groupID + "_1",
-				"token":           "SAHUR",
-				"contractAddress": "DNrmDMs2czDaAwgzg2BmvM7Jn5ZqA6VN5huRqCrSpump",
-				"signalType":      "buy",
-				"blockchain":      "solana",
-				"timestamp":       time.Now().Add(-30 * time.Minute).Format(time.RFC3339),
-				"price":           "$0.0000258",
-				"marketCap":       "$25,746",
-				"performance":     0.0,
-			},
-			{
-				"id":              "sig_" + groupID + "_2",
-				"token":           "WELCOME",
-				"contractAddress": "HkQmVAVBkruwEXhqpBjheyRedxqm5exDtBfnJ8Wipump",
-				"signalType":      "buy",
-				"blockchain":      "solana",
-				"timestamp":       time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
-				"price":           "",
-				"marketCap":       "",
-				"performance":     0.0,
-			},
+		// First pass: collect unique signals (keeping first occurrence)
+		for _, msg := range messages {
+			if contracts, ok := msg["contracts"].([]map[string]interface{}); ok {
+				for _, contract := range contracts {
+					var key string
+					if addr, ok := contract["address"]; ok && addr != nil {
+						key = addr.(string)
+					} else if token, ok := contract["token"].(string); ok {
+						key = "symbol:" + token
+					}
+
+					if key != "" {
+						if _, exists := uniqueSignals[key]; !exists {
+							uniqueSignals[key] = contract
+							allSignals = append(allSignals, contract)
+						}
+					}
+				}
+			}
 		}
 
-		// Only include channels that have actual Solana signals
-		if len(mockSignals) > 0 {
-			// Handle username field which might be empty
+		// Only include channels that have actual signals
+		if len(allSignals) > 0 {
 			username := ""
 			if user, ok := group["username"].(string); ok {
 				username = user
 			}
 
-			// Handle members field which might be int or int32
 			members := 0
 			if m, ok := group["members"].(int); ok {
 				members = m
@@ -286,15 +262,15 @@ func (c *TelegramController) GetSignalChannels(w http.ResponseWriter, r *http.Re
 			}
 
 			signalChannel := map[string]interface{}{
-				"id":            groupID,
+				"id":            strconv.FormatInt(groupID, 10),
 				"title":         group["title"].(string),
 				"username":      username,
 				"members":       members,
 				"status":        "active",
 				"lastActivity":  time.Now().Add(-30 * time.Minute).Format(time.RFC3339),
-				"signalCount":   len(mockSignals),
-				"successRate":   75.0 + float64(len(mockSignals)*5), // Mock success rate
-				"recentSignals": mockSignals,
+				"signalCount":   len(allSignals), // Use length of deduplicated signals
+				"successRate":   0.0,
+				"recentSignals": allSignals, // Use deduplicated signals
 			}
 
 			signalChannels = append(signalChannels, signalChannel)

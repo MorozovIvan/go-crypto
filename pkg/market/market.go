@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -579,7 +581,7 @@ func (s *MarketService) GetRSI() (float64, []float64, error) {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return 0, nil, fmt.Errorf("failed to fetch historical prices for %s timeframe: status code %d", resp.StatusCode)
+			return 0, nil, fmt.Errorf("failed to fetch historical prices for %s timeframe: status code %d", tf, resp.StatusCode)
 		}
 
 		var klines [][]interface{}
@@ -1029,7 +1031,7 @@ func (s *MarketService) GetMovingAverages() (float64, []float64, error) {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return 0, nil, fmt.Errorf("failed to fetch historical prices for %s timeframe: status code %d", resp.StatusCode)
+			return 0, nil, fmt.Errorf("failed to fetch historical prices for %s timeframe: status code %d", tf, resp.StatusCode)
 		}
 
 		var klines [][]interface{}
@@ -1255,4 +1257,495 @@ func checkMACrossovers(maValues map[string]map[string]float64, historicalData ma
 	}
 
 	return crossovers
+}
+
+// SwapEvent and Shyft OHLCV logic
+
+type SwapEvent struct {
+	Timestamp int64
+	Price     float64
+	Volume    float64
+	AmountIn  float64
+	AmountOut float64
+}
+
+func fetchShyftSignatures(tokenMint string, max int) ([]string, error) {
+	var allSigs []string
+	var before string
+	batchSize := 100
+	shyftAPIKey := os.Getenv("SHYFT_API_KEY")
+	if shyftAPIKey == "" {
+		return nil, fmt.Errorf("SHYFT_API_KEY environment variable not set")
+	}
+	shyftEndpoint := "https://rpc.shyft.to/?api_key=" + shyftAPIKey
+	for len(allSigs) < max {
+		params := map[string]interface{}{
+			"jsonrpc": "2.0",
+			"id":      1,
+			"method":  "getSignaturesForAddress",
+			"params": []interface{}{
+				tokenMint,
+				map[string]interface{}{
+					"limit": batchSize,
+				},
+			},
+		}
+		if before != "" {
+			params["params"].([]interface{})[1].(map[string]interface{})["before"] = before
+		}
+		b, _ := json.Marshal(params)
+		resp, err := http.Post(shyftEndpoint, "application/json", bytes.NewReader(b))
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			return nil, fmt.Errorf("HTTP error: %d", resp.StatusCode)
+		}
+		var result struct {
+			Result []struct {
+				Signature string `json:"signature"`
+				BlockTime int64  `json:"blockTime"`
+			} `json:"result"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			return nil, err
+		}
+		if len(result.Result) == 0 {
+			break
+		}
+		for _, r := range result.Result {
+			allSigs = append(allSigs, r.Signature)
+		}
+		before = result.Result[len(result.Result)-1].Signature
+		if len(result.Result) < batchSize {
+			break
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	if len(allSigs) > max {
+		allSigs = allSigs[:max]
+	}
+	return allSigs, nil
+}
+
+func fetchShyftTransaction(signature string) (logMessages []string, blockTime int64, err error) {
+	shyftAPIKey := os.Getenv("SHYFT_API_KEY")
+	if shyftAPIKey == "" {
+		return nil, 0, fmt.Errorf("SHYFT_API_KEY environment variable not set")
+	}
+	shyftEndpoint := "https://rpc.shyft.to/?api_key=" + shyftAPIKey
+	body := map[string]interface{}{
+		"jsonrpc": "2.0",
+		"id":      1,
+		"method":  "getTransaction",
+		"params": []interface{}{signature, map[string]interface{}{
+			"encoding":                       "json",
+			"maxSupportedTransactionVersion": 0,
+		}},
+	}
+	b, _ := json.Marshal(body)
+	resp, err := http.Post(shyftEndpoint, "application/json", bytes.NewReader(b))
+	if err != nil {
+		return nil, 0, err
+	}
+	defer resp.Body.Close()
+	var result struct {
+		Result struct {
+			Meta struct {
+				LogMessages []string    `json:"logMessages"`
+				Err         interface{} `json:"err"`
+			} `json:"meta"`
+			BlockTime int64 `json:"blockTime"`
+		} `json:"result"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, 0, err
+	}
+	if result.Result.Meta.Err != nil {
+		return nil, 0, fmt.Errorf("transaction error")
+	}
+	return result.Result.Meta.LogMessages, result.Result.BlockTime, nil
+}
+
+func parseSwapFromLog(logMsg string, blockTime int64) (SwapEvent, bool) {
+	patterns := []*regexp.Regexp{
+		regexp.MustCompile(`SwapEvent\s*\{\s*dex:\s*(\\w+),\s*amount_in:\s*(\\d+),\s*amount_out:\s*(\\d+)\s*\}`),
+		regexp.MustCompile(`Dex::Pumpfunamm\s+amount_in:\s*(\\d+),\s*offset:\s*(\\d+)`),
+		regexp.MustCompile(`(?i)swapped\s+([\\d,]+\\.?\\d*)\s+([A-Z0-9]+)\s+for\s+([\\d,]+\\.?\\d*)\s+([A-Z0-9]+)`),
+		regexp.MustCompile(`(?i)swap[:\\s]+([\\d,]+\\.?\\d*)\s+([A-Z0-9]+)\s*[->→]\\s*([\\d,]+\\.?\\d*)\s+([A-Z0-9]+)`),
+	}
+	for i, pattern := range patterns {
+		matches := pattern.FindStringSubmatch(logMsg)
+		if len(matches) > 0 {
+			switch i {
+			case 0:
+				if len(matches) >= 4 {
+					amountIn := parseFloat(matches[2])
+					amountOut := parseFloat(matches[3])
+					if amountIn > 0 && amountOut > 0 {
+						price := amountIn / amountOut
+						volume := amountIn
+						return SwapEvent{
+							Timestamp: blockTime,
+							Price:     price,
+							Volume:    volume,
+							AmountIn:  amountIn,
+							AmountOut: amountOut,
+						}, true
+					}
+				}
+			case 1:
+				if len(matches) >= 3 {
+					amountIn := parseFloat(matches[1])
+					if amountIn > 0 {
+						price := 1.0
+						volume := amountIn
+						return SwapEvent{
+							Timestamp: blockTime,
+							Price:     price,
+							Volume:    volume,
+							AmountIn:  amountIn,
+							AmountOut: 0,
+						}, true
+					}
+				}
+			case 2, 3:
+				if len(matches) >= 5 {
+					amount1 := parseFloat(matches[1])
+					amount2 := parseFloat(matches[3])
+					if amount1 > 0 && amount2 > 0 {
+						price := amount1 / amount2
+						volume := amount1
+						return SwapEvent{
+							Timestamp: blockTime,
+							Price:     price,
+							Volume:    volume,
+							AmountIn:  amount1,
+							AmountOut: amount2,
+						}, true
+					}
+				}
+			}
+		}
+	}
+	return SwapEvent{}, false
+}
+
+func parseFloat(s string) float64 {
+	var result float64
+	fmt.Sscanf(s, "%f", &result)
+	return result
+}
+
+func generateOHLCVCandles(swapEvents []SwapEvent, intervalSec int) []OHLCVData {
+	if len(swapEvents) == 0 {
+		return []OHLCVData{}
+	}
+	candleMap := make(map[int64]*OHLCVData)
+	for _, event := range swapEvents {
+		intervalStart := (event.Timestamp / int64(intervalSec)) * int64(intervalSec)
+		candle, exists := candleMap[intervalStart]
+		if !exists {
+			candle = &OHLCVData{
+				Timestamp: time.Unix(intervalStart, 0).Format(time.RFC3339),
+				Open:      event.Price,
+				High:      event.Price,
+				Low:       event.Price,
+				Close:     event.Price,
+				Volume:    event.Volume,
+				Trades:    1,
+			}
+			candleMap[intervalStart] = candle
+		} else {
+			if event.Price > candle.High {
+				candle.High = event.Price
+			}
+			if event.Price < candle.Low {
+				candle.Low = event.Price
+			}
+			candle.Close = event.Price
+			candle.Volume += event.Volume
+			candle.Trades++
+		}
+	}
+	var candles []OHLCVData
+	for _, candle := range candleMap {
+		candles = append(candles, *candle)
+	}
+	// Sort by timestamp
+	for i := 0; i < len(candles)-1; i++ {
+		for j := i + 1; j < len(candles); j++ {
+			if candles[i].Timestamp > candles[j].Timestamp {
+				candles[i], candles[j] = candles[j], candles[i]
+			}
+		}
+	}
+	return candles
+}
+
+// fetchShyftOHLCVData fetches and parses OHLCV data from Shyft
+func fetchShyftOHLCVData(tokenMint string, from, to int64, intervalSec int) ([]OHLCVData, error) {
+	sigs, err := fetchShyftSignatures(tokenMint, 1000)
+	if err != nil {
+		return nil, err
+	}
+	var swapEvents []SwapEvent
+	for _, sig := range sigs {
+		logMessages, blockTime, err := fetchShyftTransaction(sig)
+		if err != nil {
+			continue
+		}
+		if blockTime < from || blockTime > to {
+			continue
+		}
+		for _, logMsg := range logMessages {
+			if swap, found := parseSwapFromLog(logMsg, blockTime); found {
+				swapEvents = append(swapEvents, swap)
+			}
+		}
+		// Avoid rate limiting
+		time.Sleep(100 * time.Millisecond)
+	}
+	return generateOHLCVCandles(swapEvents, intervalSec), nil
+}
+
+// mergeOHLCVSources merges multiple OHLCV sources, preferring the first (Shyft), then Moralis, then DexScreener
+func mergeOHLCVSources(sources ...[]OHLCVData) []OHLCVData {
+	timestampMap := make(map[string]OHLCVData)
+	for _, src := range sources {
+		for _, candle := range src {
+			if _, exists := timestampMap[candle.Timestamp]; !exists {
+				timestampMap[candle.Timestamp] = candle
+			}
+		}
+	}
+	var merged []OHLCVData
+	for _, candle := range timestampMap {
+		merged = append(merged, candle)
+	}
+	// Sort by timestamp
+	for i := 0; i < len(merged)-1; i++ {
+		for j := i + 1; j < len(merged); j++ {
+			if merged[i].Timestamp > merged[j].Timestamp {
+				merged[i], merged[j] = merged[j], merged[i]
+			}
+		}
+	}
+	return merged
+}
+
+// fetchDexScreenerOHLCVData fetches OHLCV data from DexScreener API
+func fetchDexScreenerOHLCVData(tokenMint string, from, to int64, intervalSec int) ([]OHLCVData, error) {
+	// DexScreener doesn't provide direct OHLCV API, but we can get current price and estimate
+	url := fmt.Sprintf("https://api.dexscreener.com/latest/dex/tokens/%s", tokenMint)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch DexScreener data: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("DexScreener API returned status %d", resp.StatusCode)
+	}
+
+	var dexResp struct {
+		Pairs []struct {
+			PriceUsd string `json:"priceUsd"`
+			Volume   struct {
+				H24 float64 `json:"h24"`
+			} `json:"volume"`
+		} `json:"pairs"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&dexResp); err != nil {
+		return nil, fmt.Errorf("failed to decode DexScreener response: %v", err)
+	}
+
+	if len(dexResp.Pairs) == 0 {
+		return []OHLCVData{}, nil
+	}
+
+	// Use the first pair with price data
+	var price float64
+	var volume float64
+	for _, pair := range dexResp.Pairs {
+		if pair.PriceUsd != "" {
+			if p, err := strconv.ParseFloat(pair.PriceUsd, 64); err == nil {
+				price = p
+				volume = pair.Volume.H24
+				break
+			}
+		}
+	}
+
+	if price == 0 {
+		return []OHLCVData{}, nil
+	}
+
+	// Create a single OHLCV candle with current data
+	// Since DexScreener doesn't provide historical OHLCV, we create one candle
+	candle := OHLCVData{
+		Timestamp: time.Unix(to, 0).Format(time.RFC3339),
+		Open:      price,
+		High:      price,
+		Low:       price,
+		Close:     price,
+		Volume:    volume,
+		Trades:    1,
+	}
+
+	return []OHLCVData{candle}, nil
+}
+
+// GetSmartOHLCVData fetches and merges OHLCV data from Shyft, Moralis, and DexScreener
+func GetSmartOHLCVData(tokenMint, period, timeframe string) ([]OHLCVData, error) {
+	// Calculate time range
+	to := time.Now().Unix()
+	var from int64
+	switch period {
+	case "24h":
+		from = to - 24*60*60
+	case "3d":
+		from = to - 3*24*60*60
+	case "7d":
+		from = to - 7*24*60*60
+	case "30d":
+		from = to - 30*24*60*60
+	default:
+		from = to - 24*60*60
+	}
+
+	// Convert timeframe to interval seconds
+	intervalSec := 1
+	switch timeframe {
+	case "1s":
+		intervalSec = 1
+	case "2s":
+		intervalSec = 2
+	case "3s":
+		intervalSec = 3
+	case "1m":
+		intervalSec = 60
+	case "5m":
+		intervalSec = 300
+	case "15m":
+		intervalSec = 900
+	case "1h":
+		intervalSec = 3600
+	case "4h":
+		intervalSec = 14400
+	case "1d":
+		intervalSec = 86400
+	}
+
+	// Fetch from all sources concurrently
+	var shyftData, moralisData, dexData []OHLCVData
+	var shyftErr, moralisErr, dexErr error
+
+	// Use channels to handle concurrent fetching
+	shyftChan := make(chan []OHLCVData, 1)
+	moralisChan := make(chan []OHLCVData, 1)
+	dexChan := make(chan []OHLCVData, 1)
+	errChan := make(chan error, 3)
+
+	// Fetch Shyft data
+	go func() {
+		data, err := fetchShyftOHLCVData(tokenMint, from, to, intervalSec)
+		if err != nil {
+			errChan <- fmt.Errorf("Shyft error: %v", err)
+			shyftChan <- []OHLCVData{}
+		} else {
+			shyftChan <- data
+		}
+	}()
+
+	// Fetch Moralis data
+	go func() {
+		moralisService := NewMoralisService()
+		// First get pair address
+		pairAddress, err := moralisService.GetPairAddress(tokenMint)
+		if err != nil {
+			errChan <- fmt.Errorf("Moralis pair error: %v", err)
+			moralisChan <- []OHLCVData{}
+			return
+		}
+
+		// Convert timeframe to Moralis format
+		moralisTimeframe := timeframe
+		if timeframe == "1s" || timeframe == "2s" || timeframe == "3s" {
+			moralisTimeframe = "1m" // Moralis doesn't support sub-minute timeframes
+		}
+
+		startTime := time.Unix(from, 0)
+		endTime := time.Unix(to, 0)
+
+		data, err := moralisService.GetOHLCVDataRange(pairAddress, startTime, endTime, moralisTimeframe)
+		if err != nil {
+			errChan <- fmt.Errorf("Moralis OHLCV error: %v", err)
+			moralisChan <- []OHLCVData{}
+		} else {
+			moralisChan <- data
+		}
+	}()
+
+	// Fetch DexScreener data
+	go func() {
+		data, err := fetchDexScreenerOHLCVData(tokenMint, from, to, intervalSec)
+		if err != nil {
+			errChan <- fmt.Errorf("DexScreener error: %v", err)
+			dexChan <- []OHLCVData{}
+		} else {
+			dexChan <- data
+		}
+	}()
+
+	// Collect results with timeout
+	timeout := time.After(30 * time.Second)
+
+	// Collect Shyft data
+	select {
+	case shyftData = <-shyftChan:
+	case <-timeout:
+		shyftErr = fmt.Errorf("Shyft timeout")
+		shyftData = []OHLCVData{}
+	}
+
+	// Collect Moralis data
+	select {
+	case moralisData = <-moralisChan:
+	case <-timeout:
+		moralisErr = fmt.Errorf("Moralis timeout")
+		moralisData = []OHLCVData{}
+	}
+
+	// Collect DexScreener data
+	select {
+	case dexData = <-dexChan:
+	case <-timeout:
+		dexErr = fmt.Errorf("DexScreener timeout")
+		dexData = []OHLCVData{}
+	}
+
+	// Log results
+	log.Printf("Smart OHLCV fetch results for %s: Shyft=%d, Moralis=%d, DexScreener=%d",
+		tokenMint, len(shyftData), len(moralisData), len(dexData))
+
+	if shyftErr != nil {
+		log.Printf("Shyft error: %v", shyftErr)
+	}
+	if moralisErr != nil {
+		log.Printf("Moralis error: %v", moralisErr)
+	}
+	if dexErr != nil {
+		log.Printf("DexScreener error: %v", dexErr)
+	}
+
+	// Merge all sources, preferring Shyft > Moralis > DexScreener
+	merged := mergeOHLCVSources(shyftData, moralisData, dexData)
+
+	log.Printf("Merged OHLCV data: %d total candles", len(merged))
+	return merged, nil
 }

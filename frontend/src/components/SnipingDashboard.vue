@@ -328,121 +328,8 @@ export default {
         avoidRugPulls: true,
         onlyVerifiedDevs: false
       },
-      tokens: [
-        {
-          address: '0x1234...5678',
-          name: 'PumpCat',
-          symbol: 'PCAT',
-          logo: 'https://via.placeholder.com/40/FF6B35/FFFFFF?text=PC',
-          createdAt: '2 min ago',
-          socialScore: 847,
-          xMentions: 623,
-          telegramMentions: 224,
-          liquidity: 15420,
-          volume: 8750,
-          riskLevel: 'Low',
-          sniped: false
-        },
-        {
-          address: '0x2345...6789',
-          name: 'MoonDoge',
-          symbol: 'MDOGE',
-          logo: 'https://via.placeholder.com/40/4ECDC4/FFFFFF?text=MD',
-          createdAt: '5 min ago',
-          socialScore: 1203,
-          xMentions: 891,
-          telegramMentions: 312,
-          liquidity: 22100,
-          volume: 12400,
-          riskLevel: 'Low',
-          sniped: true
-        },
-        {
-          address: '0x3456...7890',
-          name: 'SolanaShiba',
-          symbol: 'SSHIB',
-          logo: 'https://via.placeholder.com/40/45B7D1/FFFFFF?text=SS',
-          createdAt: '8 min ago',
-          socialScore: 654,
-          xMentions: 456,
-          telegramMentions: 198,
-          liquidity: 8900,
-          volume: 5200,
-          riskLevel: 'Medium',
-          sniped: false
-        },
-        {
-          address: '0x4567...8901',
-          name: 'PumpPepe',
-          symbol: 'PPEPE',
-          logo: 'https://via.placeholder.com/40/96CEB4/FFFFFF?text=PP',
-          createdAt: '12 min ago',
-          socialScore: 1456,
-          xMentions: 1124,
-          telegramMentions: 332,
-          liquidity: 31200,
-          volume: 18700,
-          riskLevel: 'Low',
-          sniped: true
-        },
-        {
-          address: '0x5678...9012',
-          name: 'SafeMoon2',
-          symbol: 'SAFE2',
-          logo: 'https://via.placeholder.com/40/FFEAA7/000000?text=S2',
-          createdAt: '15 min ago',
-          socialScore: 432,
-          xMentions: 298,
-          telegramMentions: 134,
-          liquidity: 6800,
-          volume: 3100,
-          riskLevel: 'High',
-          sniped: false
-        },
-        {
-          address: '0x6789...0123',
-          name: 'ElonCoin',
-          symbol: 'ELON',
-          logo: 'https://via.placeholder.com/40/DDA0DD/000000?text=EC',
-          createdAt: '18 min ago',
-          socialScore: 2103,
-          xMentions: 1654,
-          telegramMentions: 449,
-          liquidity: 45600,
-          volume: 28900,
-          riskLevel: 'Low',
-          sniped: true
-        }
-      ],
-      recentSnipes: [
-        {
-          id: 1,
-          name: 'MoonDoge',
-          symbol: 'MDOGE',
-          logo: 'https://via.placeholder.com/48/4ECDC4/FFFFFF?text=MD',
-          timestamp: '3 minutes ago',
-          buyAmount: 500,
-          currentValue: 847
-        },
-        {
-          id: 2,
-          name: 'PumpPepe',
-          symbol: 'PPEPE',
-          logo: 'https://via.placeholder.com/48/96CEB4/FFFFFF?text=PP',
-          timestamp: '8 minutes ago',
-          buyAmount: 250,
-          currentValue: 623
-        },
-        {
-          id: 3,
-          name: 'ElonCoin',
-          symbol: 'ELON',
-          logo: 'https://via.placeholder.com/48/DDA0DD/000000?text=EC',
-          timestamp: '15 minutes ago',
-          buyAmount: 1000,
-          currentValue: 1456
-        }
-      ]
+      tokens: [],
+      recentSnipes: []
     }
   },
   computed: {
@@ -494,9 +381,138 @@ export default {
     },
     viewTokenDetails(token) {
       this.$toast?.info(`Viewing details for ${token.name}...`);
+    },
+    generateTokenIcon(symbol, color) {
+      // Create a simple colored circle with the symbol text
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+          <circle cx="20" cy="20" r="18" fill="${color}" stroke="#ffffff" stroke-width="2"/>
+          <text x="20" y="25" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#ffffff">${symbol}</text>
+        </svg>
+      `;
+      return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
     }
   },
   mounted() {
+    // Initialize tokens with generated icons
+    this.tokens = [
+      {
+        address: '0x1234...5678',
+        name: 'PumpCat',
+        symbol: 'PCAT',
+        logo: this.generateTokenIcon('PC', '#FF6B35'),
+        createdAt: '2 min ago',
+        socialScore: 847,
+        xMentions: 623,
+        telegramMentions: 224,
+        liquidity: 15420,
+        volume: 8750,
+        riskLevel: 'Low',
+        sniped: false
+      },
+      {
+        address: '0x2345...6789',
+        name: 'MoonDoge',
+        symbol: 'MDOGE',
+        logo: this.generateTokenIcon('MD', '#4ECDC4'),
+        createdAt: '5 min ago',
+        socialScore: 1203,
+        xMentions: 891,
+        telegramMentions: 312,
+        liquidity: 22100,
+        volume: 12400,
+        riskLevel: 'Low',
+        sniped: true
+      },
+      {
+        address: '0x3456...7890',
+        name: 'SolanaShiba',
+        symbol: 'SSHIB',
+        logo: this.generateTokenIcon('SS', '#45B7D1'),
+        createdAt: '8 min ago',
+        socialScore: 654,
+        xMentions: 456,
+        telegramMentions: 198,
+        liquidity: 8900,
+        volume: 5200,
+        riskLevel: 'Medium',
+        sniped: false
+      },
+      {
+        address: '0x4567...8901',
+        name: 'PumpPepe',
+        symbol: 'PPEPE',
+        logo: this.generateTokenIcon('PP', '#96CEB4'),
+        createdAt: '12 min ago',
+        socialScore: 1456,
+        xMentions: 1124,
+        telegramMentions: 332,
+        liquidity: 31200,
+        volume: 18700,
+        riskLevel: 'Low',
+        sniped: true
+      },
+      {
+        address: '0x5678...9012',
+        name: 'SafeMoon2',
+        symbol: 'SAFE2',
+        logo: this.generateTokenIcon('S2', '#FFEAA7'),
+        createdAt: '15 min ago',
+        socialScore: 432,
+        xMentions: 298,
+        telegramMentions: 134,
+        liquidity: 6800,
+        volume: 3100,
+        riskLevel: 'High',
+        sniped: false
+      },
+      {
+        address: '0x6789...0123',
+        name: 'ElonCoin',
+        symbol: 'ELON',
+        logo: this.generateTokenIcon('EC', '#DDA0DD'),
+        createdAt: '18 min ago',
+        socialScore: 2103,
+        xMentions: 1654,
+        telegramMentions: 449,
+        liquidity: 45600,
+        volume: 28900,
+        riskLevel: 'Low',
+        sniped: true
+      }
+    ];
+
+    // Initialize recent snipes
+    this.recentSnipes = [
+      {
+        id: 1,
+        name: 'MoonDoge',
+        symbol: 'MDOGE',
+        logo: this.generateTokenIcon('MD', '#4ECDC4'),
+        timestamp: '3 minutes ago',
+        buyAmount: 500,
+        currentValue: 847
+      },
+      {
+        id: 2,
+        name: 'PumpPepe',
+        symbol: 'PPEPE',
+        logo: this.generateTokenIcon('PP', '#96CEB4'),
+        timestamp: '8 minutes ago',
+        buyAmount: 250,
+        currentValue: 623
+      },
+      {
+        id: 3,
+        name: 'ElonCoin',
+        symbol: 'ELON',
+        logo: this.generateTokenIcon('EC', '#DDA0DD'),
+        timestamp: '15 minutes ago',
+        buyAmount: 1000,
+        currentValue: 1456
+      }
+    ];
+
     // Simulate real-time updates
     setInterval(() => {
       // Update social scores and volumes randomly

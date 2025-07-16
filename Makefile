@@ -33,7 +33,7 @@ start-backend: check-backend-port
 	@go run main.go & echo $$! > .backend.pid
 	@echo "Waiting for backend server to start..."
 	@for i in 1 2 3 4 5; do \
-		if curl -s http://localhost:8080/api/telegram/test > /dev/null; then \
+		if curl -s http://localhost:8080/api/health > /dev/null; then \
 			echo "Backend server is running on port 8080"; \
 			break; \
 		fi; \
