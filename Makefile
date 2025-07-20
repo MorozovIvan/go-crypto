@@ -3,7 +3,7 @@
 # Kill all related processes
 kill-all:
 	@echo "Killing all related processes..."
-	@pkill -f "go run main.go" || true
+	@pkill -f "go run cmd/server/main.go" || true
 	@pkill -f "npm run dev" || true
 	@lsof -ti:8080,8081,5173 | xargs kill -9 2>/dev/null || true
 	@rm -f .backend.pid .frontend.pid
@@ -30,10 +30,10 @@ check-frontend-port:
 # Start the backend server
 start-backend: check-backend-port
 	@echo "Starting backend server..."
-	@go run main.go & echo $$! > .backend.pid
+	@go run cmd/server/main.go & echo $$! > .backend.pid
 	@echo "Waiting for backend server to start..."
 	@for i in 1 2 3 4 5; do \
-		if curl -s http://localhost:8080/api/health > /dev/null; then \
+		if curl -s http://localhost:8080/api/system/health > /dev/null; then \
 			echo "Backend server is running on port 8080"; \
 			break; \
 		fi; \

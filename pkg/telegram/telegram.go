@@ -113,6 +113,10 @@ func NewTelegramService() (*TelegramService, error) {
 		},
 	}
 
+	// Set environment variables for ClientFromEnvironment
+	os.Setenv("TELEGRAM_API_ID", config.GlobalConfig.TelegramAPIID)
+	os.Setenv("TELEGRAM_API_HASH", config.GlobalConfig.TelegramAPIHash)
+
 	client, err := telegram.ClientFromEnvironment(options)
 	if err != nil {
 		logger.Error("Failed to create Telegram client", zap.Error(err))
@@ -409,6 +413,10 @@ func (s *TelegramService) reinitializeClient() {
 			LangCode:      "en",
 		},
 	}
+
+	// Set environment variables for ClientFromEnvironment
+	os.Setenv("TELEGRAM_API_ID", config.GlobalConfig.TelegramAPIID)
+	os.Setenv("TELEGRAM_API_HASH", config.GlobalConfig.TelegramAPIHash)
 
 	client, err := telegram.ClientFromEnvironment(options)
 	if err != nil {
@@ -868,9 +876,9 @@ func (s *TelegramService) extractSolanaContracts(messageText string) []map[strin
 				for _, existing := range contracts {
 					if existing["address"] == address {
 						alreadyExists = true
-					break
+						break
+					}
 				}
-			}
 				if !alreadyExists {
 					tokenName := s.extractTokenName(messageText, address)
 					contracts = append(contracts, map[string]interface{}{
@@ -922,7 +930,7 @@ func (s *TelegramService) extractSolanaContracts(messageText string) []map[strin
 				// Only add symbol-only if we don't have it with an address
 				if !hasAddress {
 					fmt.Printf("[DEBUG] Added symbol-only signal: $%s\n", symbol)
-				contracts = append(contracts, map[string]interface{}{
+					contracts = append(contracts, map[string]interface{}{
 						"address":     nil,
 						"token":       symbol,
 						"blockchain":  nil,
@@ -939,7 +947,7 @@ func (s *TelegramService) extractSolanaContracts(messageText string) []map[strin
 		fmt.Println("[DEBUG] Extracted tokens/addresses:")
 		for _, c := range contracts {
 			fmt.Printf("  address: %v, token: %v, blockchain: %v\n", c["address"], c["token"], c["blockchain"])
-			}
+		}
 	} else {
 		fmt.Println("[DEBUG] No tokens/addresses extracted from this message.")
 	}
@@ -2214,6 +2222,11 @@ func (s *TelegramService) GetStatus() map[string]interface{} {
 	}
 
 	return status
+}
+
+// SaveAuthState saves the current authentication state to a persistent file (public method)
+func (s *TelegramService) SaveAuthState() {
+	s.saveAuthState()
 }
 
 // GracefulShutdown gracefully shuts down the service while preserving authentication state

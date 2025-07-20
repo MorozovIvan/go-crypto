@@ -1,0 +1,76 @@
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /static/*filepath         --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (7 handlers)
+[GIN-debug] HEAD   /static/*filepath         --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (7 handlers)
+[GIN-debug] GET    /                         --> go-vue/internal/server.(*Server).setupRoutes.(*RouterGroup).StaticFile.func1 (7 handlers)
+[GIN-debug] HEAD   /                         --> go-vue/internal/server.(*Server).setupRoutes.(*RouterGroup).StaticFile.func1 (7 handlers)
+[GIN-debug] GET    /api/system/health        --> go-vue/internal/handlers/system.handleHealth (7 handlers)
+[GIN-debug] GET    /api/system/metrics       --> go-vue/internal/handlers/system.handleSystemMetrics (7 handlers)
+[GIN-debug] GET    /api/system/cache-stats   --> go-vue/internal/handlers/system.handleCacheStats (7 handlers)
+[GIN-debug] GET    /api/system/circuit-breaker-stats --> go-vue/internal/handlers/system.handleCircuitBreakerStats (7 handlers)
+[GIN-debug] GET    /api/ws                   --> go-vue/internal/server.(*Server).handleWebSocket-fm (7 handlers)
+[GIN-debug] GET    /api/telegram/auth/callback --> go-vue/internal/handlers/telegram.handleTelegramAuthCallback (7 handlers)
+[GIN-debug] GET    /api/telegram/phone       --> go-vue/internal/handlers/telegram.handleTelegramPhone (7 handlers)
+[GIN-debug] POST   /api/telegram/verify-code --> go-vue/internal/handlers/telegram.handleTelegramVerifyCode (7 handlers)
+[GIN-debug] POST   /api/telegram/verify-2fa  --> go-vue/internal/handlers/telegram.handleTelegramVerify2FA (7 handlers)
+[GIN-debug] GET    /api/telegram/status      --> go-vue/internal/handlers/telegram.handleTelegramStatus (7 handlers)
+[GIN-debug] POST   /api/telegram/logout      --> go-vue/internal/handlers/telegram.handleTelegramLogout (7 handlers)
+[GIN-debug] GET    /api/telegram/groups      --> go-vue/internal/handlers/telegram.handleGetGroups (7 handlers)
+[GIN-debug] GET    /api/telegram/current-user --> go-vue/internal/handlers/telegram.handleGetCurrentUser (7 handlers)
+[GIN-debug] GET    /api/telegram/signal-channels --> go-vue/internal/handlers/telegram.handleTelegramSignalChannels (7 handlers)
+[GIN-debug] GET    /api/telegram/analyze-token --> go-vue/internal/handlers/telegram.handleTokenAnalysis (7 handlers)
+[GIN-debug] POST   /api/telegram/analyze-group-tokens --> go-vue/internal/handlers/telegram.handleBulkTokenAnalysis (7 handlers)
+[GIN-debug] GET    /api/cmc/global           --> go-vue/internal/handlers/market.handleCMCGlobal (7 handlers)
+[GIN-debug] GET    /api/trends               --> go-vue/internal/handlers/market.handleTrends (7 handlers)
+[GIN-debug] GET    /api/ssr                  --> go-vue/internal/handlers/market.handleSSR (7 handlers)
+[GIN-debug] GET    /api/exchange-flows       --> go-vue/internal/handlers/market.handleExchangeFlows (7 handlers)
+[GIN-debug] GET    /api/active-addresses     --> go-vue/internal/handlers/market.handleActiveAddresses (7 handlers)
+[GIN-debug] GET    /api/whale-transactions   --> go-vue/internal/handlers/market.handleWhaleTransactions (7 handlers)
+[GIN-debug] GET    /api/funding-rate         --> go-vue/internal/handlers/market.handleFundingRate (7 handlers)
+[GIN-debug] GET    /api/open-interest        --> go-vue/internal/handlers/market.handleOpenInterest (7 handlers)
+[GIN-debug] GET    /api/altcoin-season       --> go-vue/internal/handlers/market.handleAltcoinSeasonIndex (7 handlers)
+[GIN-debug] GET    /api/volume-trend         --> go-vue/internal/handlers/market.handleVolumeTrend (7 handlers)
+[GIN-debug] GET    /api/bollinger-bands      --> go-vue/internal/handlers/market.handleBollingerBands (7 handlers)
+[GIN-debug] GET    /api/rsi                  --> go-vue/internal/handlers/market.handleRSI (7 handlers)
+[GIN-debug] GET    /api/moving-averages      --> go-vue/internal/handlers/market.handleMovingAverages (7 handlers)
+[GIN-debug] GET    /api/fear-greed           --> go-vue/internal/handlers/market.handleFearGreed (7 handlers)
+[GIN-debug] GET    /api/btc-dominance        --> go-vue/internal/handlers/market.handleBTCDominance (7 handlers)
+[GIN-debug] GET    /api/market-cap           --> go-vue/internal/handlers/market.handleMarketCap (7 handlers)
+[GIN-debug] GET    /api/eth-btc-ratio        --> go-vue/internal/handlers/market.handleETHBTCRatio (7 handlers)
+[GIN-debug] GET    /api/liquidation          --> go-vue/internal/handlers/market.handleLiquidation (7 handlers)
+[GIN-debug] GET    /api/google-trends        --> go-vue/internal/handlers/market.handleGoogleTrends (7 handlers)
+[GIN-debug] GET    /api/defi-tvl             --> go-vue/internal/handlers/market.handleDeFiTVL (7 handlers)
+[GIN-debug] GET    /api/social-sentiment     --> go-vue/internal/handlers/market.handleSocialSentiment (7 handlers)
+[GIN-debug] GET    /api/options-flow         --> go-vue/internal/handlers/market.handleOptionsFlow (7 handlers)
+[GIN-debug] GET    /api/stablecoin-flows     --> go-vue/internal/handlers/market.handleStablecoinFlows (7 handlers)
+[GIN-debug] GET    /api/network-health       --> go-vue/internal/handlers/market.handleNetworkHealth (7 handlers)
+[GIN-debug] GET    /api/institutional-flows  --> go-vue/internal/handlers/market.handleInstitutionalFlows (7 handlers)
+[GIN-debug] GET    /api/yield-curves         --> go-vue/internal/handlers/market.handleYieldCurves (7 handlers)
+[GIN-debug] GET    /api/correlation-matrix   --> go-vue/internal/handlers/market.handleCorrelationMatrix (7 handlers)
+[GIN-debug] GET    /api/volatility-surface   --> go-vue/internal/handlers/market.handleVolatilitySurface (7 handlers)
+[GIN-debug] GET    /api/liquidation-heatmap  --> go-vue/internal/handlers/market.handleLiquidationHeatmap (7 handlers)
+[GIN-debug] GET    /api/solana/balance/:address --> go-vue/internal/handlers/solana.getSolanaBalance (7 handlers)
+[GIN-debug] GET    /api/portfolio            --> go-vue/internal/handlers/portfolio.handlePortfolio (7 handlers)
+[GIN-debug] GET    /api/balance              --> go-vue/internal/handlers/portfolio.handleBalance (7 handlers)
+[GIN-debug] GET    /api/token/analysis       --> go-vue/internal/handlers/token.handleTokenAnalysisWithData (7 handlers)
+2025/07/19 20:47:42 Server starting on port 8080
+[GIN] 2025/07/19 - 20:47:51 | 200 |  408.552916ms |             ::1 | GET      "/api/defi-tvl"
+[GIN] 2025/07/19 - 20:47:51 | 200 |  408.921959ms |             ::1 | GET      "/api/defi-tvl"
+[GIN] 2025/07/19 - 21:07:25 | 200 |      71.625µs |             ::1 | GET      "/api/telegram/status"
+[GIN] 2025/07/19 - 21:07:25 | 200 |      46.875µs |             ::1 | GET      "/api/telegram/status"
+[GIN] 2025/07/19 - 21:07:25 | 200 |    178.9055ms |             ::1 | GET      "/api/telegram/status"
+[GIN] 2025/07/19 - 21:07:25 | 200 |    37.14075ms |             ::1 | GET      "/api/telegram/status"
+[GIN] 2025/07/19 - 21:43:16 | 200 |      42.333µs |             ::1 | GET      "/api/telegram/status"
+[GIN] 2025/07/19 - 21:43:16 | 200 |     758.916µs |             ::1 | GET      "/api/telegram/status"
+[GIN] 2025/07/19 - 21:43:16 | 200 |     121.583µs |             ::1 | GET      "/api/telegram/status"
+[GIN] 2025/07/19 - 21:43:16 | 200 |     200.125µs |             ::1 | GET      "/api/telegram/status"
+[GIN] 2025/07/19 - 22:00:45 | 200 |      98.417µs |             ::1 | GET      "/api/telegram/status"
+[GIN] 2025/07/19 - 22:00:45 | 200 |    1.167583ms |             ::1 | GET      "/api/telegram/status"
+[GIN] 2025/07/19 - 22:00:45 | 200 |      29.125µs |             ::1 | GET      "/api/telegram/status"
+[GIN] 2025/07/19 - 22:00:45 | 200 |      99.667µs |             ::1 | GET      "/api/telegram/status"
+[GIN] 2025/07/20 - 08:53:51 | 501 |    2.417792ms |             ::1 | GET      "/api/stablecoin-flows"
+[GIN] 2025/07/20 - 08:53:51 | 501 |    3.795709ms |             ::1 | GET      "/api/stablecoin-flows"

@@ -1,0 +1,38 @@
+#!/bin/bash
+
+echo "📊 Go-Vue Refactoring Comparison"
+echo "================================"
+
+echo ""
+echo "📁 OLD STRUCTURE:"
+echo "├── main.go ($(wc -l < main.go) lines) - MONOLITHIC"
+echo "├── pkg/ (existing packages)"
+echo "└── frontend/"
+
+echo ""
+echo "📁 NEW STRUCTURE:"
+echo "├── cmd/server/main.go ($(wc -l < cmd/server/main.go) lines) - CLEAN ENTRY POINT"
+echo "├── internal/"
+echo "│   ├── handlers/ (feature-based)"
+echo "│   │   ├── telegram/ ($(find internal/handlers/telegram -name "*.go" | wc -l) files)"
+echo "│   │   ├── market/ ($(find internal/handlers/market -name "*.go" | wc -l) files)"
+echo "│   │   ├── solana/ ($(find internal/handlers/solana -name "*.go" | wc -l) files)"
+echo "│   │   ├── portfolio/ ($(find internal/handlers/portfolio -name "*.go" | wc -l) files)"
+echo "│   │   ├── token/ ($(find internal/handlers/token -name "*.go" | wc -l) files)"
+echo "│   │   └── system/ ($(find internal/handlers/system -name "*.go" | wc -l) files)"
+echo "│   ├── middleware/ ($(find internal/middleware -name "*.go" | wc -l) files)"
+echo "│   ├── websocket/ ($(find internal/websocket -name "*.go" | wc -l) files)"
+echo "│   └── server/ ($(find internal/server -name "*.go" | wc -l) files)"
+echo "├── pkg/ (existing packages)"
+echo "└── frontend/"
+
+echo ""
+echo "📈 IMPROVEMENTS:"
+echo "✅ Reduced main.go from $(wc -l < main.go) lines to $(wc -l < cmd/server/main.go) lines"
+echo "✅ Created $(find internal -name "*.go" | wc -l) modular files"
+echo "✅ Feature-based organization"
+echo "✅ Clean separation of concerns"
+echo "✅ Easier testing and maintenance"
+
+echo ""
+echo "🎯 NEXT: Run 'go run cmd/server/main.go' to test the new structure!"

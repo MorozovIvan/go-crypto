@@ -1,6 +1,7 @@
 package market
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"time"
@@ -381,6 +382,179 @@ type MockMetricData struct {
 	Timestamp  time.Time `json:"timestamp"`
 }
 
+// MockETHBTCRatio generates realistic ETH/BTC ratio data
+func (m *MockDataGenerator) MockETHBTCRatio() MockETHBTCData {
+	rand.Seed(m.seed + 7)
+
+	// Generate realistic ETH/BTC ratio (typically 0.04-0.08)
+	baseRatio := 0.06 + rand.Float64()*0.02 // 0.06-0.08 range
+
+	// Generate historical data with trend
+	historical := make([]float64, 7)
+	for i := range historical {
+		variation := (rand.Float64() - 0.5) * 0.004 // ±0.002 variation
+		historical[i] = baseRatio + variation
+		if historical[i] < 0.03 {
+			historical[i] = 0.03
+		} else if historical[i] > 0.10 {
+			historical[i] = 0.10
+		}
+	}
+
+	// Calculate indicator
+	var indicator string
+	var score float64
+	if baseRatio > 0.075 {
+		indicator = "ETH Strong"
+		score = 0.6
+	} else if baseRatio > 0.065 {
+		indicator = "ETH Moderate"
+		score = 0.3
+	} else if baseRatio < 0.045 {
+		indicator = "BTC Dominance"
+		score = -0.3
+	} else {
+		indicator = "Balanced"
+		score = 0.0
+	}
+
+	return MockETHBTCData{
+		MockMetricData: MockMetricData{
+			Value:      baseRatio,
+			Indicator:  indicator,
+			Score:      score,
+			Historical: historical,
+			ChartData:  historical,
+			APISource:  "Mock ETH/BTC Ratio Generator",
+			Timestamp:  time.Now(),
+		},
+		ETHPrice: 2500 + rand.Float64()*500,    // $2500-3000
+		BTCPrice: 45000 + rand.Float64()*10000, // $45k-55k
+	}
+}
+
+// MockSocialSentiment generates realistic social sentiment data
+func (m *MockDataGenerator) MockSocialSentiment() MockSocialSentimentData {
+	rand.Seed(m.seed + 8)
+
+	// Generate sentiment score (0-100)
+	baseSentiment := 40 + rand.Float64()*40 // 40-80 range
+
+	// Generate historical data
+	historical := make([]float64, 7)
+	for i := range historical {
+		variation := (rand.Float64() - 0.5) * 20 // ±10 variation
+		historical[i] = baseSentiment + variation
+		if historical[i] < 0 {
+			historical[i] = 0
+		} else if historical[i] > 100 {
+			historical[i] = 100
+		}
+	}
+
+	// Calculate indicator
+	var indicator string
+	var score float64
+	if baseSentiment > 75 {
+		indicator = "Very Bullish"
+		score = 0.8
+	} else if baseSentiment > 60 {
+		indicator = "Bullish"
+		score = 0.4
+	} else if baseSentiment < 25 {
+		indicator = "Very Bearish"
+		score = -0.8
+	} else if baseSentiment < 40 {
+		indicator = "Bearish"
+		score = -0.4
+	} else {
+		indicator = "Neutral"
+		score = 0.0
+	}
+
+	return MockSocialSentimentData{
+		MockMetricData: MockMetricData{
+			Value:      baseSentiment,
+			Indicator:  indicator,
+			Score:      score,
+			Historical: historical,
+			ChartData:  historical,
+			APISource:  "Mock Social Sentiment Generator",
+			Timestamp:  time.Now(),
+		},
+		TrendingCount: 5 + rand.Intn(10), // 5-15 trending coins
+	}
+}
+
+// MockOptionsFlow generates realistic options flow data
+func (m *MockDataGenerator) MockOptionsFlow() MockOptionsFlowData {
+	rand.Seed(m.seed + 9)
+
+	// Generate put/call ratio (typically 0.6-1.4)
+	putCallRatio := 0.8 + rand.Float64()*0.4 // 0.8-1.2 range
+
+	// Generate historical data
+	historical := make([]float64, 7)
+	for i := range historical {
+		variation := (rand.Float64() - 0.5) * 0.2 // ±0.1 variation
+		historical[i] = putCallRatio + variation
+		if historical[i] < 0.5 {
+			historical[i] = 0.5
+		} else if historical[i] > 1.5 {
+			historical[i] = 1.5
+		}
+	}
+
+	// Calculate indicator
+	var indicator string
+	var score float64
+	if putCallRatio > 1.2 {
+		indicator = "Bearish (High Put/Call)"
+		score = -0.6
+	} else if putCallRatio < 0.8 {
+		indicator = "Bullish (Low Put/Call)"
+		score = 0.6
+	} else {
+		indicator = "Neutral"
+		score = 0.0
+	}
+
+	return MockOptionsFlowData{
+		MockMetricData: MockMetricData{
+			Value:      putCallRatio,
+			Indicator:  indicator,
+			Score:      score,
+			Historical: historical,
+			ChartData:  historical,
+			APISource:  "Mock Options Flow Generator",
+			Timestamp:  time.Now(),
+		},
+		PutOI:      50000 + rand.Float64()*30000, // 50k-80k
+		CallOI:     40000 + rand.Float64()*40000, // 40k-80k
+		DataSource: "Simulated",
+	}
+}
+
+// Additional data structures for specific mock types
+type MockSocialSentimentData struct {
+	MockMetricData
+	TrendingCount int `json:"trending_count"`
+}
+
+type MockOptionsFlowData struct {
+	MockMetricData
+	PutOI      float64 `json:"put_oi"`
+	CallOI     float64 `json:"call_oi"`
+	DataSource string  `json:"data_source"`
+}
+
+// Add ETHPrice and BTCPrice to MockMetricData for ETH/BTC ratio
+type MockETHBTCData struct {
+	MockMetricData
+	ETHPrice float64 `json:"eth_price"`
+	BTCPrice float64 `json:"btc_price"`
+}
+
 // Global mock generator instance
 var globalMockGenerator = NewMockDataGenerator()
 
@@ -582,5 +756,265 @@ func GetCorrelationMatrixMockData() map[string]interface{} {
 		"chart_data":   data.ChartData,
 		"chart_labels": []string{"7d", "6d", "5d", "4d", "3d", "2d", "Now"},
 		"api_source":   data.APISource,
+	}
+}
+func GetETHBTCRatioMockData() map[string]interface{} {
+	// Generate mock ETH/BTC ratio data directly
+	rand.Seed(time.Now().Unix() + 300)
+
+	baseRatio := 0.06 + rand.Float64()*0.02  // 0.06-0.08 range
+	ethPrice := 2500 + rand.Float64()*500    // $2500-3000
+	btcPrice := 45000 + rand.Float64()*10000 // $45k-55k
+
+	// Generate historical data
+	historical := make([]float64, 7)
+	for i := range historical {
+		variation := (rand.Float64() - 0.5) * 0.004
+		historical[i] = baseRatio + variation
+		if historical[i] < 0.03 {
+			historical[i] = 0.03
+		} else if historical[i] > 0.10 {
+			historical[i] = 0.10
+		}
+	}
+
+	var indicator string
+	var score float64
+	if baseRatio > 0.075 {
+		indicator = "ETH Strong"
+		score = 0.6
+	} else if baseRatio > 0.065 {
+		indicator = "ETH Moderate"
+		score = 0.3
+	} else if baseRatio < 0.045 {
+		indicator = "BTC Dominance"
+		score = -0.3
+	} else {
+		indicator = "Balanced"
+		score = 0.0
+	}
+
+	return map[string]interface{}{
+		"value":        baseRatio,
+		"indicator":    indicator,
+		"score":        score,
+		"chart_data":   historical,
+		"chart_labels": []string{"7d", "6d", "5d", "4d", "3d", "2d", "Now"},
+		"eth_price":    ethPrice,
+		"btc_price":    btcPrice,
+		"api_source":   "Mock ETH/BTC Ratio Generator",
+	}
+}
+
+func GetSocialSentimentMockData() map[string]interface{} {
+	// Generate mock social sentiment data directly
+	rand.Seed(time.Now().Unix() + 400)
+
+	baseSentiment := 40 + rand.Float64()*40 // 40-80 range
+	trendingCount := 5 + rand.Intn(10)      // 5-15 trending coins
+
+	// Generate historical data
+	historical := make([]float64, 7)
+	for i := range historical {
+		variation := (rand.Float64() - 0.5) * 20
+		historical[i] = baseSentiment + variation
+		if historical[i] < 0 {
+			historical[i] = 0
+		} else if historical[i] > 100 {
+			historical[i] = 100
+		}
+	}
+
+	var indicator string
+	var score float64
+	if baseSentiment > 75 {
+		indicator = "Very Bullish"
+		score = 0.8
+	} else if baseSentiment > 60 {
+		indicator = "Bullish"
+		score = 0.4
+	} else if baseSentiment < 25 {
+		indicator = "Very Bearish"
+		score = -0.8
+	} else if baseSentiment < 40 {
+		indicator = "Bearish"
+		score = -0.4
+	} else {
+		indicator = "Neutral"
+		score = 0.0
+	}
+
+	return map[string]interface{}{
+		"value":          baseSentiment,
+		"indicator":      indicator,
+		"score":          score,
+		"chart_data":     historical,
+		"chart_labels":   []string{"7d", "6d", "5d", "4d", "3d", "2d", "Now"},
+		"trending_count": trendingCount,
+		"api_source":     "Mock Social Sentiment Generator",
+	}
+}
+
+func GetOptionsFlowMockData() map[string]interface{} {
+	// Generate mock options flow data directly
+	rand.Seed(time.Now().Unix() + 500)
+
+	putCallRatio := 0.8 + rand.Float64()*0.4 // 0.8-1.2 range
+	putOI := 50000 + rand.Float64()*30000    // 50k-80k
+	callOI := 40000 + rand.Float64()*40000   // 40k-80k
+
+	// Generate historical data
+	historical := make([]float64, 7)
+	for i := range historical {
+		variation := (rand.Float64() - 0.5) * 0.2
+		historical[i] = putCallRatio + variation
+		if historical[i] < 0.5 {
+			historical[i] = 0.5
+		} else if historical[i] > 1.5 {
+			historical[i] = 1.5
+		}
+	}
+
+	var indicator string
+	var score float64
+	if putCallRatio > 1.2 {
+		indicator = "Bearish (High Put/Call)"
+		score = -0.6
+	} else if putCallRatio < 0.8 {
+		indicator = "Bullish (Low Put/Call)"
+		score = 0.6
+	} else {
+		indicator = "Neutral"
+		score = 0.0
+	}
+
+	return map[string]interface{}{
+		"value":        putCallRatio,
+		"indicator":    indicator,
+		"score":        score,
+		"chart_data":   historical,
+		"chart_labels": []string{"7d", "6d", "5d", "4d", "3d", "2d", "Now"},
+		"put_oi":       putOI,
+		"call_oi":      callOI,
+		"data_source":  "Simulated",
+		"api_source":   "Mock Options Flow Generator",
+	}
+}
+func GetNetworkHealthMockData() map[string]interface{} {
+	// Generate mock network health data directly
+	rand.Seed(time.Now().Unix() + 600)
+
+	healthScore := 50.0 + rand.Float64()*40.0 // 50-90 range
+	peerCount := 5000 + rand.Intn(5000)       // 5k-10k peers
+	mempoolCount := 10000 + rand.Intn(15000)  // 10k-25k unconfirmed
+	avgFee := 10.0 + rand.Float64()*40.0      // 10-50 sat/byte
+
+	// Generate historical data
+	historical := make([]float64, 7)
+	for i := range historical {
+		variation := (rand.Float64() - 0.5) * 10
+		historical[i] = healthScore + variation
+		if historical[i] < 0 {
+			historical[i] = 0
+		} else if historical[i] > 100 {
+			historical[i] = 100
+		}
+	}
+
+	var indicator string
+	var score float64
+	if healthScore > 80 {
+		indicator = "Excellent"
+		score = 0.8
+	} else if healthScore > 65 {
+		indicator = "Good"
+		score = 0.4
+	} else if healthScore < 35 {
+		indicator = "Poor"
+		score = -0.6
+	} else if healthScore < 50 {
+		indicator = "Fair"
+		score = -0.2
+	} else {
+		indicator = "Average"
+		score = 0.0
+	}
+
+	return map[string]interface{}{
+		"value":         healthScore,
+		"indicator":     indicator,
+		"score":         score,
+		"chart_data":    historical,
+		"chart_labels":  []string{"7d", "6d", "5d", "4d", "3d", "2d", "Now"},
+		"block_height":  800000 + rand.Intn(10000),
+		"peer_count":    peerCount,
+		"mempool_count": mempoolCount,
+		"avg_fee_sat_b": avgFee,
+		"api_source":    "Mock Network Health Generator",
+	}
+}
+func GetTrendsMockData() map[string]interface{} {
+	// Generate mock trends data directly
+	rand.Seed(time.Now().Unix() + 700)
+
+	trendScore := 30.0 + rand.Float64()*50.0 // 30-80 range
+	keyword := "bitcoin"                     // Default keyword
+
+	// Generate historical data
+	historical := make([]float64, 7)
+	labels := make([]string, 7)
+
+	for i := range historical {
+		variation := (rand.Float64() - 0.5) * 15
+		historical[i] = trendScore + variation
+		if historical[i] > 100 {
+			historical[i] = 100
+		} else if historical[i] < 0 {
+			historical[i] = 0
+		}
+
+		// Generate date labels
+		date := time.Now().AddDate(0, 0, -6+i)
+		labels[i] = date.Format("Jan 02")
+	}
+
+	// Calculate indicator
+	avgTrend := 0.0
+	for _, val := range historical[:6] {
+		avgTrend += val
+	}
+	avgTrend /= 6.0
+
+	var indicator string
+	var score float64
+
+	if trendScore > avgTrend*1.25 {
+		indicator = "High Interest"
+		score = 0.6
+	} else if trendScore > avgTrend*1.1 {
+		indicator = "Rising Interest"
+		score = 0.3
+	} else if trendScore < avgTrend*0.75 {
+		indicator = "Low Interest"
+		score = -0.4
+	} else if trendScore < avgTrend*0.9 {
+		indicator = "Declining Interest"
+		score = -0.2
+	} else {
+		indicator = "Stable Interest"
+		score = 0.0
+	}
+
+	return map[string]interface{}{
+		"value":        fmt.Sprintf("%.1f", trendScore),
+		"indicator":    indicator,
+		"score":        score,
+		"chart_data":   historical,
+		"chart_labels": labels,
+		"keyword":      keyword,
+		"timeframe":    "7d",
+		"data_source":  "Mock Trends Generator",
+		"found_match":  true,
+		"api_source":   "Mock Trends Generator",
 	}
 }
