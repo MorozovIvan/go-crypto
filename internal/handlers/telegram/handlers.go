@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -227,14 +228,23 @@ func handleTelegramVerifyCode(c *gin.Context) {
 	// Explicitly save the authentication state
 	telegramService.SaveAuthState()
 
-	// Get the user ID from the service status (it's already stored after successful authentication)
-	status := telegramService.GetStatus()
-	userID, ok := status["user_id"].(int64)
-	if !ok || userID == 0 {
-		log.Printf("Failed to get user ID from service status: %v", status)
+	// Get the user ID directly from the service (more reliable than GetStatus)
+	userID, err := telegramService.GetCurrentUserID()
+	if err != nil {
+		log.Printf("Failed to get user ID: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "USER_ID_FAILED",
 			"message": "Failed to get user ID",
+		})
+		return
+	}
+
+	// Verify that we got a valid user ID
+	if userID == 0 {
+		log.Printf("Invalid user ID received: %d", userID)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "INVALID_USER_ID",
+			"message": "Failed to get valid user ID",
 		})
 		return
 	}
@@ -286,14 +296,23 @@ func handleTelegramVerify2FA(c *gin.Context) {
 	// Explicitly save the authentication state
 	telegramService.SaveAuthState()
 
-	// Get the user ID from the service status (it's already stored after successful 2FA)
-	status := telegramService.GetStatus()
-	userID, ok := status["user_id"].(int64)
-	if !ok || userID == 0 {
-		log.Printf("Failed to get user ID from service status: %v", status)
+	// Get the user ID directly from the service (more reliable than GetStatus)
+	userID, err := telegramService.GetCurrentUserID()
+	if err != nil {
+		log.Printf("Failed to get user ID: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "USER_ID_FAILED",
 			"message": "Failed to get user ID",
+		})
+		return
+	}
+
+	// Verify that we got a valid user ID
+	if userID == 0 {
+		log.Printf("Invalid user ID received: %d", userID)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "INVALID_USER_ID",
+			"message": "Failed to get valid user ID",
 		})
 		return
 	}
@@ -505,8 +524,23 @@ func handleTelegramSignalChannels(c *gin.Context) {
 		return
 	}
 
-	// Get signal channels
-	channels, err := telegramService.GetSignalChannels()
+	// Get query parameters
+	period := c.DefaultQuery("period", "24h")
+	userIDStr := c.DefaultQuery("user_id", "")
+
+	if userIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id parameter is required"})
+		return
+	}
+
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user_id format"})
+		return
+	}
+
+	// Get signal channels with real processing
+	channels, err := telegramService.GetSignalChannelsWithProcessing(userID, period)
 	if err != nil {
 		log.Printf("Failed to get signal channels: %v", err)
 
@@ -540,7 +574,7 @@ func handleTelegramSignalChannels(c *gin.Context) {
 			log.Printf("Telegram service reinitialized, retrying to get signal channels...")
 
 			// Retry getting signal channels with the new client
-			channels, err = telegramService.GetSignalChannels()
+			channels, err = telegramService.GetSignalChannelsWithProcessing(userID, period)
 			if err != nil {
 				log.Printf("Failed to get signal channels after reinitializing: %v", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -552,7 +586,7 @@ func handleTelegramSignalChannels(c *gin.Context) {
 		}
 	}
 
-	log.Printf("Successfully retrieved signal channels")
+	log.Printf("Successfully retrieved %d signal channels", len(channels))
 
 	c.JSON(http.StatusOK, gin.H{
 		"success":  true,

@@ -1261,7 +1261,13 @@ func (s *TelegramService) GetCurrentUserID() (int64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Use the existing authenticated client instead of creating a new one
+	// If we have a stored user ID and are authenticated, return it directly
+	if s.userAuth && s.userID != 0 {
+		s.logger.Info("Returning stored user ID", zap.Int64("userID", s.userID))
+		return s.userID, nil
+	}
+
+	// If not authenticated or no stored user ID, try to get it from API
 	if s.client == nil {
 		return 0, fmt.Errorf("no authenticated client available")
 	}
@@ -1295,7 +1301,10 @@ func (s *TelegramService) GetCurrentUserID() (int64, error) {
 				return fmt.Errorf("invalid user ID received")
 			}
 			userID = u.ID
-			s.logger.Info("Got user ID",
+			// Update stored values
+			s.userID = userID
+			s.userAuth = true
+			s.logger.Info("Got user ID from API and updated stored values",
 				zap.Int64("userID", userID),
 				zap.String("username", u.Username),
 				zap.String("firstName", u.FirstName),
@@ -1314,6 +1323,8 @@ func (s *TelegramService) GetCurrentUserID() (int64, error) {
 			// Clear the session file if authentication is invalid
 			os.Remove("session.json")
 			s.client = nil // Clear the client
+			s.userAuth = false
+			s.userID = 0
 			return 0, fmt.Errorf("session expired, please re-authenticate")
 		}
 		s.logger.Error("Failed to get user ID", zap.Error(err))
@@ -2211,13 +2222,12 @@ func (s *TelegramService) GetStatus() map[string]interface{} {
 		if err == nil {
 			status["user"] = user
 		} else {
-			// If GetCurrentUser fails, update the authentication status
-			s.mu.Lock()
-			s.userAuth = false
-			s.userID = 0
-			s.mu.Unlock()
-			status["authenticated"] = false
-			status["user_id"] = int64(0)
+			// Log the error but don't immediately reset authentication status
+			// This prevents race conditions where GetCurrentUser fails temporarily
+			s.logger.Warn("GetCurrentUser failed in GetStatus, but keeping auth state",
+				zap.Error(err),
+				zap.Int64("user_id", userID))
+			// Don't reset authentication state here - let other methods handle session validation
 		}
 	}
 
