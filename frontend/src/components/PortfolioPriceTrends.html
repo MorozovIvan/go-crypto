@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Portfolio Price Trends</title>
+		<link rel="stylesheet" href="PortfolioPriceTrends.css" />
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+	</head>
+	<body>
+		<!-- Main Portfolio Page -->
+		<div class="portfolio-container">
+			<h1>My Portfolio</h1>
+
+			<!-- Portfolio content would go here -->
+			<div class="portfolio-content">
+				<p>Your portfolio overview...</p>
+			</div>
+
+			<!-- Price Trends Button -->
+			<button
+				id="priceTrendsBtn"
+				class="price-trends-btn"
+				aria-label="View Portfolio Price Trends"
+			>
+				<svg
+					class="btn-icon"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
+					<path d="M3 3v18h18"></path>
+					<path d="M7 12l4-4 4 4 6-6"></path>
+				</svg>
+				View Portfolio Price Trends
+			</button>
+		</div>
+
+		<!-- Price Trends Modal -->
+		<div
+			id="priceTrendsModal"
+			class="modal"
+			role="dialog"
+			aria-labelledby="modalTitle"
+			aria-hidden="true"
+		>
+			<div class="modal-content">
+				<!-- Modal Header -->
+				<div class="modal-header">
+					<h2 id="modalTitle">Portfolio Price Trends</h2>
+					<button id="closeModal" class="close-btn" aria-label="Close modal">
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<line x1="18" y1="6" x2="6" y2="18"></line>
+							<line x1="6" y1="6" x2="18" y2="18"></line>
+						</svg>
+					</button>
+				</div>
+
+				<!-- Time Period Selector -->
+				<div class="time-selector">
+					<label for="timePeriod">Time Period:</label>
+					<select id="timePeriod" class="time-dropdown">
+						<option value="1d">1 Day</option>
+						<option value="7d" selected>7 Days</option>
+						<option value="30d">30 Days</option>
+						<option value="90d">90 Days</option>
+						<option value="custom">Custom Range</option>
+					</select>
+
+					<!-- Custom Date Range (hidden by default) -->
+					<div id="customRange" class="custom-range" style="display: none">
+						<input type="date" id="startDate" class="date-input" />
+						<span>to</span>
+						<input type="date" id="endDate" class="date-input" />
+						<button id="applyCustomRange" class="apply-btn">Apply</button>
+					</div>
+				</div>
+
+				<!-- Chart Container -->
+				<div class="chart-container">
+					<!-- Loading Indicator -->
+					<div id="loadingIndicator" class="loading-indicator">
+						<div class="spinner"></div>
+						<p>Loading price data...</p>
+					</div>
+
+					<!-- Error Message -->
+					<div id="errorMessage" class="error-message" style="display: none">
+						<svg
+							class="error-icon"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<circle cx="12" cy="12" r="10"></circle>
+							<line x1="15" y1="9" x2="9" y2="15"></line>
+							<line x1="9" y1="9" x2="15" y2="15"></line>
+						</svg>
+						<p id="errorText">Failed to load price data. Please try again.</p>
+						<button id="retryBtn" class="retry-btn">Retry</button>
+					</div>
+
+					<!-- Chart Canvas -->
+					<canvas id="priceChart" style="display: none"></canvas>
+				</div>
+
+				<!-- Chart Legend and Stats -->
+				<div id="chartStats" class="chart-stats" style="display: none">
+					<div class="stats-grid">
+						<div class="stat-item">
+							<span class="stat-label">Best Performer:</span>
+							<span id="bestPerformer" class="stat-value positive">-</span>
+						</div>
+						<div class="stat-item">
+							<span class="stat-label">Worst Performer:</span>
+							<span id="worstPerformer" class="stat-value negative">-</span>
+						</div>
+						<div class="stat-item">
+							<span class="stat-label">Average Change:</span>
+							<span id="averageChange" class="stat-value">-</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="PortfolioPriceTrends.js"></script>
+	</body>
+</html>

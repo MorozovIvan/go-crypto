@@ -1,0 +1,422 @@
+/* Portfolio Price Trends Styles */
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+		Ubuntu, Cantarell, sans-serif;
+	margin: 0;
+	padding: 20px;
+	background-color: #f5f7fa;
+	color: #333;
+}
+
+.portfolio-container {
+	max-width: 1200px;
+	margin: 0 auto;
+	background: white;
+	border-radius: 12px;
+	padding: 24px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.portfolio-content {
+	margin: 20px 0;
+	padding: 20px;
+	background: #f8f9fa;
+	border-radius: 8px;
+}
+
+/* Price Trends Button */
+.price-trends-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	border: none;
+	padding: 12px 24px;
+	border-radius: 8px;
+	font-size: 16px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.price-trends-btn:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.price-trends-btn:active {
+	transform: translateY(0);
+}
+
+.btn-icon {
+	width: 20px;
+	height: 20px;
+}
+
+/* Modal Styles */
+.modal {
+	display: none;
+	position: fixed;
+	z-index: 1000;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.5);
+	backdrop-filter: blur(4px);
+	animation: fadeIn 0.3s ease;
+}
+
+.modal.show {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.modal-content {
+	background: white;
+	border-radius: 16px;
+	width: 90%;
+	max-width: 1000px;
+	max-height: 90vh;
+	overflow-y: auto;
+	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+	animation: slideIn 0.3s ease;
+}
+
+.modal-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 24px 24px 0;
+	border-bottom: 1px solid #e9ecef;
+	margin-bottom: 24px;
+}
+
+.modal-header h2 {
+	margin: 0;
+	font-size: 24px;
+	font-weight: 700;
+	color: #2c3e50;
+}
+
+.close-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 8px;
+	border-radius: 50%;
+	transition: background-color 0.2s ease;
+	color: #6c757d;
+}
+
+.close-btn:hover {
+	background-color: #f8f9fa;
+	color: #495057;
+}
+
+.close-btn svg {
+	width: 24px;
+	height: 24px;
+}
+
+/* Time Selector */
+.time-selector {
+	padding: 0 24px 24px;
+	border-bottom: 1px solid #e9ecef;
+	margin-bottom: 24px;
+}
+
+.time-selector label {
+	display: block;
+	margin-bottom: 8px;
+	font-weight: 600;
+	color: #495057;
+}
+
+.time-dropdown {
+	padding: 10px 16px;
+	border: 2px solid #e9ecef;
+	border-radius: 8px;
+	font-size: 16px;
+	background: white;
+	cursor: pointer;
+	transition: border-color 0.2s ease;
+	min-width: 150px;
+}
+
+.time-dropdown:focus {
+	outline: none;
+	border-color: #667eea;
+	box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.custom-range {
+	margin-top: 16px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.date-input {
+	padding: 8px 12px;
+	border: 2px solid #e9ecef;
+	border-radius: 6px;
+	font-size: 14px;
+}
+
+.date-input:focus {
+	outline: none;
+	border-color: #667eea;
+}
+
+.apply-btn {
+	background: #28a745;
+	color: white;
+	border: none;
+	padding: 8px 16px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: 600;
+	transition: background-color 0.2s ease;
+}
+
+.apply-btn:hover {
+	background: #218838;
+}
+
+/* Chart Container */
+.chart-container {
+	position: relative;
+	padding: 0 24px;
+	min-height: 400px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+#priceChart {
+	max-height: 400px;
+	width: 100% !important;
+	height: 400px !important;
+}
+
+/* Loading Indicator */
+.loading-indicator {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 16px;
+	color: #6c757d;
+}
+
+.spinner {
+	width: 40px;
+	height: 40px;
+	border: 4px solid #f3f3f3;
+	border-top: 4px solid #667eea;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+}
+
+/* Error Message */
+.error-message {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 16px;
+	color: #dc3545;
+	text-align: center;
+}
+
+.error-icon {
+	width: 48px;
+	height: 48px;
+	color: #dc3545;
+}
+
+.retry-btn {
+	background: #dc3545;
+	color: white;
+	border: none;
+	padding: 10px 20px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: 600;
+	transition: background-color 0.2s ease;
+}
+
+.retry-btn:hover {
+	background: #c82333;
+}
+
+/* Chart Stats */
+.chart-stats {
+	padding: 24px;
+	background: #f8f9fa;
+	border-top: 1px solid #e9ecef;
+	margin-top: 24px;
+}
+
+.stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 16px;
+}
+
+.stat-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px 16px;
+	background: white;
+	border-radius: 8px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+	font-weight: 600;
+	color: #495057;
+}
+
+.stat-value {
+	font-weight: 700;
+	font-size: 16px;
+}
+
+.stat-value.positive {
+	color: #28a745;
+}
+
+.stat-value.negative {
+	color: #dc3545;
+}
+
+/* Animations */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes slideIn {
+	from {
+		opacity: 0;
+		transform: translateY(-50px) scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+	.modal-content {
+		width: 95%;
+		margin: 10px;
+		max-height: 95vh;
+	}
+
+	.modal-header {
+		padding: 16px 16px 0;
+	}
+
+	.modal-header h2 {
+		font-size: 20px;
+	}
+
+	.time-selector {
+		padding: 0 16px 16px;
+	}
+
+	.chart-container {
+		padding: 0 16px;
+		min-height: 300px;
+	}
+
+	#priceChart {
+		height: 300px !important;
+	}
+
+	.custom-range {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.stats-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.chart-stats {
+		padding: 16px;
+	}
+}
+
+@media (max-width: 480px) {
+	.price-trends-btn {
+		width: 100%;
+		justify-content: center;
+	}
+
+	.modal-content {
+		width: 100%;
+		height: 100%;
+		border-radius: 0;
+		max-height: 100vh;
+	}
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+	.modal,
+	.modal-content,
+	.spinner {
+		animation: none;
+	}
+
+	.price-trends-btn:hover {
+		transform: none;
+	}
+}
+
+/* Focus styles for keyboard navigation */
+.price-trends-btn:focus,
+.close-btn:focus,
+.time-dropdown:focus,
+.apply-btn:focus,
+.retry-btn:focus {
+	outline: 2px solid #667eea;
+	outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+	.modal-content {
+		border: 2px solid #000;
+	}
+
+	.price-trends-btn {
+		border: 2px solid #000;
+	}
+}

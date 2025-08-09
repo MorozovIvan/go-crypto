@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Portfolio Price Trends - Working Demo</title>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<style>
+			body {
+				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+					sans-serif;
+				margin: 0;
+				padding: 20px;
+				background-color: #f5f7fa;
+			}
+
+			.container {
+				max-width: 1200px;
+				margin: 0 auto;
+				background: white;
+				border-radius: 12px;
+				padding: 24px;
+				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+			}
+
+			.price-trends-btn {
+				display: inline-flex;
+				align-items: center;
+				gap: 8px;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				border: none;
+				padding: 12px 24px;
+				border-radius: 8px;
+				font-size: 16px;
+				font-weight: 600;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+			}
+
+			.price-trends-btn:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+			}
+
+			.chart-container {
+				margin-top: 20px;
+				padding: 20px;
+				background: #f8f9fa;
+				border-radius: 8px;
+			}
+
+			#priceChart {
+				max-height: 400px;
+			}
+
+			.stats {
+				margin-top: 20px;
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+				gap: 16px;
+			}
+
+			.stat-card {
+				background: white;
+				padding: 16px;
+				border-radius: 8px;
+				box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+			}
+
+			.stat-label {
+				font-size: 14px;
+				color: #6c757d;
+				margin-bottom: 4px;
+			}
+
+			.stat-value {
+				font-size: 18px;
+				font-weight: 700;
+			}
+
+			.positive {
+				color: #28a745;
+			}
+			.negative {
+				color: #dc3545;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<h1>Portfolio Price Trends Demo</h1>
+			<p>
+				This demo shows how the Portfolio Price Trends feature works with your
+				real data.
+			</p>
+
+			<button id="loadTrendsBtn" class="price-trends-btn">
+				📊 Load Portfolio Price Trends
+			</button>
+
+			<div id="chartContainer" class="chart-container" style="display: none">
+				<canvas id="priceChart"></canvas>
+
+				<div id="stats" class="stats">
+					<div class="stat-card">
+						<div class="stat-label">Best Performer</div>
+						<div id="bestPerformer" class="stat-value positive">-</div>
+					</div>
+					<div class="stat-card">
+						<div class="stat-label">Worst Performer</div>
+						<div id="worstPerformer" class="stat-value negative">-</div>
+					</div>
+					<div class="stat-card">
+						<div class="stat-label">Average Change</div>
+						<div id="averageChange" class="stat-value">-</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			let chart = null
+
+			document
+				.getElementById('loadTrendsBtn')
+				.addEventListener('click', async () => {
+					const btn = document.getElementById('loadTrendsBtn')
+					const container = document.getElementById('chartContainer')
+
+					btn.textContent = '⏳ Loading...'
+					btn.disabled = true
+
+					try {
+						// Get portfolio data
+						const portfolioResponse = await fetch('/api/portfolio')
+						const portfolioData = await portfolioResponse.json()
+
+						if (!portfolioData.assets || portfolioData.assets.length === 0) {
+							alert('No portfolio assets found')
+							return
+						}
+
+						// Get price data for first few tokens (limit for demo)
+						const tokens = portfolioData.assets.slice(0, 5) // First 5 tokens
+						const pricePromises = tokens.map(async asset => {
+							try {
+								const response = await fetch(
+									`/api/portfolio/token-prices/${asset.symbol}?period=7d`
+								)
+								const data = await response.json()
+								return { tokenId: asset.symbol, ...data }
+							} catch (error) {
+								console.warn(`Failed to fetch ${asset.symbol}:`, error)
+								return null
+							}
+						})
+
+						const priceResults = await Promise.all(pricePromises)
+						const validPriceData = priceResults.filter(
+							result => result && result.prices
+						)
+
+						if (validPriceData.length === 0) {
+							alert('No price data available')
+							return
+						}
+
+						// Create chart
+						createChart(validPriceData)
+						updateStats(validPriceData)
+
+						container.style.display = 'block'
+					} catch (error) {
+						console.error('Error loading data:', error)
+						alert('Failed to load portfolio data: ' + error.message)
+					} finally {
+						btn.textContent = '📊 Load Portfolio Price Trends'
+						btn.disabled = false
+					}
+				})
+
+			function createChart(priceData) {
+				if (chart) {
+					chart.destroy()
+				}
+
+				const ctx = document.getElementById('priceChart').getContext('2d')
+
+				// Create datasets
+				const datasets = []
+				const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
+				let labels = []
+
+				priceData.forEach((tokenData, index) => {
+					if (!tokenData.prices || tokenData.prices.length === 0) return
+
+					const prices = tokenData.prices
+					const basePrice = prices[0].price
+
+					// Create labels from first dataset
+					if (labels.length === 0) {
+						labels = prices.map(point => {
+							const date = new Date(point.timestamp)
+							return date.toLocaleDateString('en-US', {
+								month: 'short',
+								day: 'numeric',
+							})
+						})
+					}
+
+					const data = prices.map(
+						point => ((point.price - basePrice) / basePrice) * 100
+					)
+
+					const color = colors[index % colors.length]
+
+					datasets.push({
+						label: tokenData.tokenId,
+						data: data,
+						borderColor: color,
+						backgroundColor: color + '20',
+						fill: false,
+						tension: 0.4,
+					})
+				})
+
+				chart = new Chart(ctx, {
+					type: 'line',
+					data: {
+						labels: labels,
+						datasets: datasets,
+					},
+					options: {
+						responsive: true,
+						maintainAspectRatio: false,
+						plugins: {
+							title: {
+								display: true,
+								text: 'Portfolio Price Changes - Last 7 Days',
+								font: { size: 16, weight: 'bold' },
+							},
+							legend: {
+								display: true,
+								position: 'top',
+							},
+							tooltip: {
+								callbacks: {
+									label: function (context) {
+										const value = context.parsed.y
+										const sign = value >= 0 ? '+' : ''
+										return `${context.dataset.label}: ${sign}${value.toFixed(
+											2
+										)}%`
+									},
+								},
+							},
+						},
+						scales: {
+							x: {
+								title: { display: true, text: 'Time' },
+							},
+							y: {
+								title: { display: true, text: 'Price Change (%)' },
+								ticks: {
+									callback: function (value) {
+										return value.toFixed(1) + '%'
+									},
+								},
+							},
+						},
+					},
+				})
+			}
+
+			function updateStats(priceData) {
+				const changes = []
+
+				priceData.forEach(tokenData => {
+					if (!tokenData.prices || tokenData.prices.length < 2) return
+
+					const prices = tokenData.prices
+					const firstPrice = prices[0].price
+					const lastPrice = prices[prices.length - 1].price
+					const change = ((lastPrice - firstPrice) / firstPrice) * 100
+
+					changes.push({ token: tokenData.tokenId, change })
+				})
+
+				if (changes.length === 0) return
+
+				changes.sort((a, b) => b.change - a.change)
+
+				const best = changes[0]
+				const worst = changes[changes.length - 1]
+				const average =
+					changes.reduce((sum, item) => sum + item.change, 0) / changes.length
+
+				document.getElementById('bestPerformer').textContent = `${
+					best.token
+				}: +${best.change.toFixed(2)}%`
+				document.getElementById('bestPerformer').className = `stat-value ${
+					best.change >= 0 ? 'positive' : 'negative'
+				}`
+
+				document.getElementById('worstPerformer').textContent = `${
+					worst.token
+				}: ${worst.change.toFixed(2)}%`
+				document.getElementById('worstPerformer').className = `stat-value ${
+					worst.change >= 0 ? 'positive' : 'negative'
+				}`
+
+				document.getElementById('averageChange').textContent = `${
+					average >= 0 ? '+' : ''
+				}${average.toFixed(2)}%`
+				document.getElementById('averageChange').className = `stat-value ${
+					average >= 0 ? 'positive' : 'negative'
+				}`
+			}
+		</script>
+	</body>
+</html>

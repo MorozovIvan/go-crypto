@@ -1,20 +1,14 @@
 <template>
 	<div class="mx-auto max-w-7xl">
-		<!-- Header Section -->
-		<div class="mb-8">
-			<h1 class="text-3xl font-bold text-gray-900">Token Analysis</h1>
-			<p class="mt-1 text-gray-600">
-				Analyze Solana tokens and pump.fun projects with real-time market data
-			</p>
-		</div>
-
 		<!-- Token Input Section -->
-		<div class="p-6 mb-8 bg-white rounded-xl border border-gray-100 shadow-sm">
+		<div
+			class="p-6 mb-8 bg-base-100 rounded-xl border border-base-300 shadow-sm"
+		>
 			<div class="flex flex-col gap-4 md:flex-row">
 				<div class="flex-1">
 					<label
 						for="tokenInput"
-						class="block mb-2 text-sm font-medium text-gray-700"
+						class="block mb-2 text-sm font-medium text-base-content"
 					>
 						Token Address or Pump.fun ID
 					</label>
@@ -24,7 +18,7 @@
 							v-model="tokenAddress"
 							type="text"
 							placeholder="Enter Solana mint address or pump.fun ID (e.g., 4avLyx8E2NZQDGENgeKQYTwCiNQFUZh5LYVycm31pump)"
-							class="px-4 py-3 w-full rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							class="input input-bordered w-full"
 							:disabled="isLoading"
 							@keyup.enter="analyzeToken"
 						/>
@@ -32,28 +26,12 @@
 							v-if="isLoading"
 							class="absolute right-3 top-1/2 transform -translate-y-1/2"
 						>
-							<svg
-								class="w-5 h-5 text-blue-500 animate-spin"
-								fill="none"
-								viewBox="0 0 24 24"
-							>
-								<circle
-									class="opacity-25"
-									cx="12"
-									cy="12"
-									r="10"
-									stroke="currentColor"
-									stroke-width="4"
-								></circle>
-								<path
-									class="opacity-75"
-									fill="currentColor"
-									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-								></path>
-							</svg>
+							<span
+								class="loading loading-spinner loading-sm text-primary"
+							></span>
 						</div>
 					</div>
-					<p class="mt-1 text-sm text-gray-500">
+					<p class="mt-1 text-sm text-base-content/70">
 						Supports Solana mint addresses and pump.fun project IDs
 					</p>
 				</div>
@@ -61,7 +39,7 @@
 					<button
 						@click="analyzeToken"
 						:disabled="!tokenAddress.trim() || isLoading"
-						class="flex items-center px-6 py-3 space-x-2 text-white bg-blue-500 rounded-lg transition-colors hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+						class="btn btn-primary"
 					>
 						<svg
 							v-if="!isLoading"
@@ -86,53 +64,32 @@
 		<!-- Loading State -->
 		<div
 			v-if="isLoading"
-			class="p-8 text-center bg-white rounded-xl border border-gray-100 shadow-sm"
+			class="p-8 text-center bg-base-100 rounded-xl border border-base-300 shadow-sm"
 		>
-			<svg
-				class="mx-auto mb-4 w-12 h-12 text-blue-500 animate-spin"
-				fill="none"
-				viewBox="0 0 24 24"
-			>
-				<circle
-					class="opacity-25"
-					cx="12"
-					cy="12"
-					r="10"
-					stroke="currentColor"
-					stroke-width="4"
-				></circle>
-				<path
-					class="opacity-75"
-					fill="currentColor"
-					d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-				></path>
-			</svg>
-			<p class="text-gray-600">{{ loadingMessage }}</p>
+			<span
+				class="loading loading-spinner loading-lg text-primary mx-auto mb-4"
+			></span>
+			<p class="text-base-content/70">{{ loadingMessage }}</p>
 		</div>
 
 		<!-- Error State -->
-		<div
-			v-else-if="error"
-			class="p-6 mb-8 bg-red-50 rounded-xl border border-red-200"
-		>
-			<div class="flex items-center space-x-3">
-				<svg
-					class="w-6 h-6 text-red-500"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-					></path>
-				</svg>
-				<div>
-					<h3 class="text-lg font-medium text-red-800">Analysis Failed</h3>
-					<p class="mt-1 text-red-700">{{ error }}</p>
-				</div>
+		<div v-else-if="error" class="alert alert-error mb-8">
+			<svg
+				class="w-6 h-6"
+				fill="none"
+				stroke="currentColor"
+				viewBox="0 0 24 24"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+				></path>
+			</svg>
+			<div>
+				<h3 class="font-bold">Analysis Failed</h3>
+				<div class="text-xs">{{ error }}</div>
 			</div>
 		</div>
 

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="crypto">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaisyUI Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        
+        <div class="drawer-content flex flex-col">
+            <div class="navbar bg-base-200">
+                <div class="navbar-start">
+                    <label for="drawer-toggle" class="btn btn-square btn-ghost lg:hidden">☰</label>
+                    <a class="btn btn-ghost text-xl">CryptoTrends</a>
+                </div>
+            </div>
+            
+            <main class="flex-1 p-6">
+                <h1 class="text-3xl font-bold">Dashboard Overview</h1>
+                <div class="stats shadow mt-4">
+                    <div class="stat">
+                        <div class="stat-title">Total Signals</div>
+                        <div class="stat-value">1,247</div>
+                    </div>
+                </div>
+            </main>
+        </div>
+        
+        <div class="drawer-side">
+            <label for="drawer-toggle" class="drawer-overlay"></label>
+            <aside class="w-64 min-h-full bg-base-200">
+                <ul class="menu p-4">
+                    <li><a>Dashboard</a></li>
+                    <li><a>Analytics</a></li>
+                </ul>
+            </aside>
+        </div>
+    </div>
+</body>
+</html>

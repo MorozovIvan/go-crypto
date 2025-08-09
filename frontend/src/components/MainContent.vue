@@ -1,26 +1,30 @@
 <template>
-	<main class="flex-1 p-6 bg-gray-50 min-h-screen">
-		<div v-if="!isConnected" class="text-center">
-			<TelegramConnectForm
-				@connected="handleConnected"
-				@2fa-required="handle2FARequired"
-			/>
-		</div>
-		<div v-else class="max-w-7xl mx-auto">
-			<!-- Header Section -->
-			<div class="flex justify-between items-center mb-8">
-				<div>
-					<h1 class="text-3xl font-bold text-gray-900">Signal Analytics</h1>
-					<p class="text-gray-600 mt-1">
-						Track and analyze your Telegram trading signals
+	<div class="min-h-screen bg-base-100">
+		<!-- Hero Section for Connection -->
+		<div v-if="!isConnected" class="hero min-h-screen gradient-bg">
+			<div class="hero-content text-center">
+				<div class="max-w-md">
+					<p class="text-lg mb-8 opacity-80">
+						Connect your Telegram to start analyzing trading signals
 					</p>
+					<TelegramConnectForm
+						@connected="handleConnected"
+						@2fa-required="handle2FARequired"
+					/>
 				</div>
+			</div>
+		</div>
+
+		<!-- Main Dashboard -->
+		<div v-else class="container mx-auto px-4 py-8">
+			<!-- User Profile Section -->
+			<div class="flex justify-end mb-6">
 				<div class="flex items-center space-x-4">
 					<!-- User Profile Dropdown -->
 					<div v-if="userInfo" class="relative">
 						<button
 							@click="showUserDropdown = !showUserDropdown"
-							class="flex items-center space-x-3 bg-white px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+							class="flex items-center space-x-3 bg-base-100 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-base-300"
 						>
 							<div
 								class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm"
@@ -28,10 +32,10 @@
 								{{ getUserInitials(userInfo) }}
 							</div>
 							<div class="text-sm text-left">
-								<div class="font-medium text-gray-900">
+								<div class="font-medium text-base-content">
 									{{ getUserDisplayName(userInfo) }}
 								</div>
-								<div class="text-gray-500">
+								<div class="text-base-content/70">
 									@{{ userInfo.username || 'telegram' }}
 								</div>
 							</div>
@@ -54,9 +58,9 @@
 						<!-- Dropdown Menu -->
 						<div
 							v-if="showUserDropdown"
-							class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
+							class="absolute right-0 mt-2 w-64 bg-base-100 rounded-lg shadow-lg border border-base-300 py-2 z-50"
 						>
-							<div class="px-4 py-3 border-b border-gray-100">
+							<div class="px-4 py-3 border-b border-base-300">
 								<div class="flex items-center space-x-3">
 									<div
 										class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold"
@@ -64,13 +68,16 @@
 										{{ getUserInitials(userInfo) }}
 									</div>
 									<div>
-										<div class="font-medium text-gray-900">
+										<div class="font-medium text-base-content">
 											{{ getUserDisplayName(userInfo) }}
 										</div>
-										<div class="text-sm text-gray-500">
+										<div class="text-sm text-base-content/70">
 											@{{ userInfo.username || 'telegram' }}
 										</div>
-										<div v-if="userInfo.phone" class="text-xs text-gray-400">
+										<div
+											v-if="userInfo.phone"
+											class="text-xs text-base-content/50"
+										>
 											{{ userInfo.phone }}
 										</div>
 									</div>
@@ -80,7 +87,7 @@
 							<div class="py-1">
 								<button
 									@click="refreshUserInfo"
-									class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+									class="w-full text-left px-4 py-2 text-sm text-base-content hover:bg-base-200 flex items-center space-x-2"
 								>
 									<svg
 										class="w-4 h-4"
@@ -100,7 +107,7 @@
 
 								<button
 									@click="handleLogout"
-									class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+									class="w-full text-left px-4 py-2 text-sm text-error hover:bg-error/10 flex items-center space-x-2"
 								>
 									<svg
 										class="w-4 h-4"
@@ -124,14 +131,12 @@
 					<!-- Loading state when user info is not available -->
 					<div
 						v-else
-						class="flex items-center space-x-3 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200"
+						class="flex items-center space-x-3 bg-base-100 px-4 py-2 rounded-lg shadow-sm border border-base-300"
 					>
-						<div class="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+						<div class="skeleton w-10 h-10 rounded-full"></div>
 						<div class="text-sm">
-							<div
-								class="w-20 h-4 bg-gray-200 rounded animate-pulse mb-1"
-							></div>
-							<div class="w-16 h-3 bg-gray-200 rounded animate-pulse"></div>
+							<div class="skeleton w-20 h-4 mb-1"></div>
+							<div class="skeleton w-16 h-3"></div>
 						</div>
 					</div>
 				</div>
@@ -139,17 +144,17 @@
 
 			<!-- Time Period Filter -->
 			<div class="mb-6">
-				<h3 class="text-lg font-semibold text-gray-900 mb-3">Time Period</h3>
+				<h3 class="text-lg font-semibold text-base-content mb-3">
+					Time Period
+				</h3>
 				<div class="flex flex-wrap gap-2">
 					<button
 						v-for="period in timePeriods"
 						:key="period.value"
 						@click="selectedPeriod = period.value"
 						:class="[
-							'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
-							selectedPeriod === period.value
-								? 'bg-blue-500 text-white shadow-md'
-								: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50',
+							'btn btn-sm',
+							selectedPeriod === period.value ? 'btn-primary' : 'btn-outline',
 						]"
 					>
 						{{ period.label }}
@@ -161,12 +166,8 @@
 			<div class="flex justify-end mb-4">
 				<button
 					@click="showUniqueOnly = !showUniqueOnly"
-					class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-					:class="
-						showUniqueOnly
-							? 'bg-blue-500 text-white'
-							: 'bg-gray-200 text-gray-700'
-					"
+					class="btn btn-sm"
+					:class="showUniqueOnly ? 'btn-primary' : 'btn-outline'"
 				>
 					{{
 						showUniqueOnly ? 'Showing Unique Signals' : 'Showing All Signals'
@@ -176,28 +177,22 @@
 
 			<!-- Stats Overview -->
 			<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-				<div class="bg-gray-50 p-4 rounded-lg">
-					<div class="text-2xl font-bold text-gray-900">
-						{{ filteredSignals }}
-					</div>
-					<div class="text-sm text-gray-600">
-						{{ showUniqueOnly ? 'Unique Signals' : 'Total Signals' }}
+				<div class="stats shadow">
+					<div class="stat">
+						<div class="stat-value text-primary">
+							{{ filteredSignals }}
+						</div>
+						<div class="stat-title">
+							{{ showUniqueOnly ? 'Unique Signals' : 'Total Signals' }}
+						</div>
 					</div>
 				</div>
 
-				<div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-					<div class="flex items-center justify-between">
-						<div>
-							<p class="text-sm font-medium text-gray-600">Total Channels</p>
-							<p class="text-2xl font-bold text-gray-900">
-								{{ filteredChannels.length }}
-							</p>
-						</div>
-						<div
-							class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center"
-						>
+				<div class="stats shadow">
+					<div class="stat">
+						<div class="stat-figure text-secondary">
 							<svg
-								class="w-6 h-6 text-blue-600"
+								class="w-8 h-8"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
@@ -210,20 +205,16 @@
 								></path>
 							</svg>
 						</div>
+						<div class="stat-title">Total Channels</div>
+						<div class="stat-value">{{ filteredChannels.length }}</div>
 					</div>
 				</div>
 
-				<div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-					<div class="flex items-center justify-between">
-						<div>
-							<p class="text-sm font-medium text-gray-600">Total Signals</p>
-							<p class="text-2xl font-bold text-gray-900">{{ totalSignals }}</p>
-						</div>
-						<div
-							class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center"
-						>
+				<div class="stats shadow">
+					<div class="stat">
+						<div class="stat-figure text-success">
 							<svg
-								class="w-6 h-6 text-green-600"
+								class="w-8 h-8"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
@@ -236,22 +227,16 @@
 								></path>
 							</svg>
 						</div>
+						<div class="stat-title">Total Signals</div>
+						<div class="stat-value">{{ totalSignals }}</div>
 					</div>
 				</div>
 
-				<div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-					<div class="flex items-center justify-between">
-						<div>
-							<p class="text-sm font-medium text-gray-600">Win Rate</p>
-							<p class="text-2xl font-bold text-green-600">
-								{{ overallWinRate }}%
-							</p>
-						</div>
-						<div
-							class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center"
-						>
+				<div class="stats shadow">
+					<div class="stat">
+						<div class="stat-figure text-success">
 							<svg
-								class="w-6 h-6 text-green-600"
+								class="w-8 h-8"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
@@ -264,28 +249,19 @@
 								></path>
 							</svg>
 						</div>
+						<div class="stat-title">Win Rate</div>
+						<div class="stat-value text-success">{{ overallWinRate }}%</div>
 					</div>
 				</div>
 
-				<div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-					<div class="flex items-center justify-between">
-						<div>
-							<p class="text-sm font-medium text-gray-600">Total PNL</p>
-							<p
-								class="text-2xl font-bold"
-								:class="totalPnl >= 0 ? 'text-green-600' : 'text-red-600'"
-							>
-								{{ totalPnl >= 0 ? '+' : ''
-								}}{{ Number(totalPnl || 0).toFixed(2) }}%
-							</p>
-						</div>
+				<div class="stats shadow">
+					<div class="stat">
 						<div
-							class="w-12 h-12 rounded-lg flex items-center justify-center"
-							:class="totalPnl >= 0 ? 'bg-green-100' : 'bg-red-100'"
+							class="stat-figure"
+							:class="totalPnl >= 0 ? 'text-success' : 'text-error'"
 						>
 							<svg
-								class="w-6 h-6"
-								:class="totalPnl >= 0 ? 'text-green-600' : 'text-red-600'"
+								class="w-8 h-8"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
@@ -302,20 +278,28 @@
 								></path>
 							</svg>
 						</div>
+						<div class="stat-title">Total PNL</div>
+						<div
+							class="stat-value"
+							:class="totalPnl >= 0 ? 'text-success' : 'text-error'"
+						>
+							{{ totalPnl >= 0 ? '+' : ''
+							}}{{ Number(totalPnl || 0).toFixed(2) }}%
+						</div>
 					</div>
 				</div>
 			</div>
 
 			<!-- Channel Analysis Section -->
-			<div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8">
-				<div class="p-6 border-b border-gray-100">
-					<div class="flex justify-between items-center">
-						<h2 class="text-xl font-semibold text-gray-900">Signal Channels</h2>
+			<div class="card bg-base-100 shadow-xl mb-8">
+				<div class="card-body">
+					<div class="flex justify-between items-center mb-4">
+						<h2 class="card-title">Signal Channels</h2>
 						<div class="flex items-center space-x-3">
 							<button
 								@click="loadSignalChannels"
 								:disabled="loadingChannels"
-								class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center space-x-2"
+								class="btn btn-primary"
 							>
 								<svg
 									v-if="loadingChannels"
@@ -341,10 +325,7 @@
 									loadingChannels ? 'Loading...' : 'Refresh Channels'
 								}}</span>
 							</button>
-							<select
-								v-model="sortBy"
-								class="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-							>
+							<select v-model="sortBy" class="select select-bordered select-sm">
 								<option value="winRate">Sort by Win Rate</option>
 								<option value="pnl">Sort by PNL</option>
 								<option value="signals">Sort by Signals</option>
@@ -937,7 +918,7 @@
 				</div>
 			</div>
 		</div>
-	</main>
+	</div>
 </template>
 
 <script>
@@ -991,18 +972,25 @@ export default {
 		filteredChannels() {
 			// Filter channels based on selected time period and Solana signals
 			return this.signalChannels.filter(channel => {
-				if (!channel.recentSignals || channel.recentSignals.length === 0)
-					return false
+				// Check if channel has messages (the API returns 'messages', not 'recentSignals')
+				if (!channel.messages || channel.messages.length === 0) return false
 
 				const periodHours = this.getPeriodHours(this.selectedPeriod)
 				const cutoffTime = new Date(Date.now() - periodHours * 60 * 60 * 1000)
 
 				// Check if channel has Solana signals in the selected period
-				return channel.recentSignals.some(signal => {
-					const signalTime = new Date(signal.signal_time || signal.timestamp)
-					const isInPeriod = signalTime > cutoffTime
-					const isSolana = signal.blockchain === 'solana' || !signal.blockchain // Default to solana if no blockchain specified
-					return isInPeriod && isSolana
+				return channel.messages.some(message => {
+					if (!message.contracts || message.contracts.length === 0) return false
+
+					const messageTime = new Date(message.date)
+					const isInPeriod = messageTime > cutoffTime
+
+					// Check if any contract in the message is Solana
+					const hasSolanaContract = message.contracts.some(
+						contract => contract.blockchain === 'solana' || !contract.blockchain // Default to solana if no blockchain specified
+					)
+
+					return isInPeriod && hasSolanaContract
 				})
 			})
 		},
@@ -1063,25 +1051,33 @@ export default {
 			if (!this.showUniqueOnly) {
 				// Show all signals without deduplication
 				return this.signalChannels.reduce((total, channel) => {
-					return total + (channel.recentSignals?.length || 0)
+					return (
+						total +
+						(channel.messages?.reduce((msgTotal, message) => {
+							return msgTotal + (message.contracts?.length || 0)
+						}, 0) || 0)
+					)
 				}, 0)
 			}
 
 			// Show only unique signals
 			const uniqueTokens = new Set()
 			this.signalChannels.forEach(channel => {
-				if (channel.recentSignals) {
-					channel.recentSignals.forEach(signal => {
-						const key = signal.address || `symbol:${signal.token}`
-						uniqueTokens.add(key)
+				if (channel.messages) {
+					channel.messages.forEach(message => {
+						if (message.contracts) {
+							message.contracts.forEach(contract => {
+								const key = contract.address || `symbol:${contract.token}`
+								uniqueTokens.add(key)
+							})
+						}
 					})
 				}
 			})
 			return uniqueTokens.size
 		},
 		modalSignals() {
-			if (!this.selectedChannel || !this.selectedChannel.recentSignals)
-				return []
+			if (!this.selectedChannel || !this.selectedChannel.messages) return []
 			const signals = this.getFilteredContracts(this.selectedChannel)
 			if (!this.showUniqueOnlyModal) return signals
 			// Deduplicate by address or symbol
@@ -1160,7 +1156,7 @@ export default {
 				}
 
 				if (data.success && data.channels) {
-					// Simplified mapping - only use fields that are actually displayed/used
+					// Map the API response correctly - use 'messages' field from API
 					this.signalChannels = data.channels.map(signalChannel => ({
 						id: signalChannel.id,
 						title: signalChannel.title,
@@ -1170,7 +1166,7 @@ export default {
 						winRate: signalChannel.winRate || 0,
 						pnl: signalChannel.totalPnl || 0,
 						lastSignal: signalChannel.lastActivity,
-						recentSignals: signalChannel.contractAddresses || [],
+						messages: signalChannel.messages || [], // Use messages from API
 						status: signalChannel.status || 'active',
 					}))
 
@@ -1284,8 +1280,11 @@ export default {
 			return num.toString()
 		},
 
-		handleConnected() {
-			this.$emit('connect')
+		async handleConnected(userId) {
+			console.log('MainContent handleConnected called with userId:', userId)
+			this.$emit('connect', userId)
+			// Refresh user info after successful connection
+			await this.loadUserInfo()
 		},
 
 		handle2FARequired(data) {
@@ -1401,17 +1400,31 @@ export default {
 		},
 
 		getFilteredContracts(channel) {
-			if (!channel.recentSignals || channel.recentSignals.length === 0)
-				return []
+			if (!channel.messages || channel.messages.length === 0) return []
 
 			const periodHours = this.getPeriodHours(this.selectedPeriod)
 			const cutoffTime = new Date(Date.now() - periodHours * 60 * 60 * 1000)
 
-			return channel.recentSignals.filter(signal => {
-				const signalTime = new Date(signal.signal_time || signal.timestamp)
-				const isInPeriod = signalTime > cutoffTime
-				return isInPeriod
+			// Extract all contracts from all messages within the time period
+			const contracts = []
+			channel.messages.forEach(message => {
+				const messageTime = new Date(message.date)
+				const isInPeriod = messageTime > cutoffTime
+
+				if (isInPeriod && message.contracts) {
+					message.contracts.forEach(contract => {
+						// Add message metadata to contract for compatibility
+						contracts.push({
+							...contract,
+							signal_time: message.date,
+							timestamp: message.date,
+							message_id: message.id,
+						})
+					})
+				}
 			})
+
+			return contracts
 		},
 
 		getSortedContracts(channel) {
@@ -1906,6 +1919,28 @@ export default {
 		getAllSignalCount(channel) {
 			const filteredSignals = this.getFilteredContracts(channel)
 			return filteredSignals ? filteredSignals.length : 0
+		},
+
+		// Add method for performance badge class (daisyUI)
+		getPerformanceBadgeClass(channel) {
+			const winRate = channel.winRate || 0
+			const pnl = channel.pnl || 0
+
+			if (winRate >= 80 && pnl >= 50) return 'badge-success'
+			if (winRate >= 60 && pnl >= 20) return 'badge-primary'
+			if (winRate >= 40 && pnl >= 0) return 'badge-warning'
+			return 'badge-error'
+		},
+
+		// Add method for performance label
+		getPerformanceLabel(channel) {
+			const winRate = channel.winRate || 0
+			const pnl = channel.pnl || 0
+
+			if (winRate >= 80 && pnl >= 50) return 'Excellent'
+			if (winRate >= 60 && pnl >= 20) return 'Good'
+			if (winRate >= 40 && pnl >= 0) return 'Average'
+			return 'Poor'
 		},
 	},
 

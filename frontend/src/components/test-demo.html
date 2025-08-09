@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Price Trends Button Test</title>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				padding: 20px;
+				background: #f5f7fa;
+			}
+
+			.container {
+				max-width: 800px;
+				margin: 0 auto;
+				background: white;
+				padding: 20px;
+				border-radius: 8px;
+				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+			}
+
+			.price-trends-btn {
+				display: inline-flex;
+				align-items: center;
+				gap: 8px;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				border: none;
+				padding: 12px 24px;
+				border-radius: 8px;
+				font-size: 16px;
+				font-weight: 600;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+			}
+
+			.price-trends-btn:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+			}
+
+			.btn-icon {
+				width: 20px;
+				height: 20px;
+			}
+
+			.modal {
+				display: none;
+				position: fixed;
+				z-index: 1000;
+				left: 0;
+				top: 0;
+				width: 100%;
+				height: 100%;
+				background-color: rgba(0, 0, 0, 0.5);
+			}
+
+			.modal.show {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+
+			.modal-content {
+				background: white;
+				border-radius: 16px;
+				width: 90%;
+				max-width: 600px;
+				padding: 24px;
+				box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+			}
+
+			.modal-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 20px;
+			}
+
+			.close-btn {
+				background: none;
+				border: none;
+				cursor: pointer;
+				padding: 8px;
+				border-radius: 50%;
+				color: #6c757d;
+			}
+
+			.close-btn:hover {
+				background-color: #f8f9fa;
+			}
+
+			.close-btn svg {
+				width: 24px;
+				height: 24px;
+			}
+
+			.test-content {
+				text-align: center;
+				padding: 40px 20px;
+				color: #666;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<h1>Price Trends Button Test</h1>
+			<p>
+				This is a simple test to verify the button functionality works
+				correctly.
+			</p>
+
+			<button id="priceTrendsBtn" class="price-trends-btn">
+				<svg
+					class="btn-icon"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
+					<path d="M3 3v18h18"></path>
+					<path d="M7 12l4-4 4 4 6-6"></path>
+				</svg>
+				View Portfolio Price Trends
+			</button>
+
+			<div
+				style="
+					margin-top: 20px;
+					padding: 16px;
+					background: #e8f5e8;
+					border-radius: 8px;
+				"
+			>
+				<p><strong>Test Instructions:</strong></p>
+				<ol>
+					<li>Click the button above</li>
+					<li>Modal should open</li>
+					<li>Click the X to close</li>
+					<li>Check browser console for any errors</li>
+				</ol>
+			</div>
+		</div>
+
+		<!-- Modal -->
+		<div id="priceTrendsModal" class="modal">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>Portfolio Price Trends</h2>
+					<button id="closeModal" class="close-btn">
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<line x1="18" y1="6" x2="6" y2="18"></line>
+							<line x1="6" y1="6" x2="18" y2="18"></line>
+						</svg>
+					</button>
+				</div>
+
+				<div class="test-content">
+					<h3>✅ Modal is working!</h3>
+					<p>The button successfully opened this modal.</p>
+					<p>Click the X button above to close.</p>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			console.log('Script loaded')
+
+			document.addEventListener('DOMContentLoaded', function () {
+				console.log('DOM loaded')
+
+				const btn = document.getElementById('priceTrendsBtn')
+				const modal = document.getElementById('priceTrendsModal')
+				const closeBtn = document.getElementById('closeModal')
+
+				if (btn) {
+					console.log('Button found')
+					btn.addEventListener('click', function () {
+						console.log('Button clicked!')
+						modal.classList.add('show')
+					})
+				} else {
+					console.error('Button not found!')
+				}
+
+				if (closeBtn) {
+					console.log('Close button found')
+					closeBtn.addEventListener('click', function () {
+						console.log('Close button clicked!')
+						modal.classList.remove('show')
+					})
+				}
+
+				// Close on backdrop click
+				modal.addEventListener('click', function (e) {
+					if (e.target === modal) {
+						console.log('Backdrop clicked')
+						modal.classList.remove('show')
+					}
+				})
+
+				// Close on Escape key
+				document.addEventListener('keydown', function (e) {
+					if (e.key === 'Escape' && modal.classList.contains('show')) {
+						console.log('Escape pressed')
+						modal.classList.remove('show')
+					}
+				})
+			})
+		</script>
+	</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Portfolio Price Trends - Real Data Test</title>
+		<link rel="stylesheet" href="PortfolioPriceTrends.css" />
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+	</head>
+	<body>
+		<div class="portfolio-container">
+			<h1>Portfolio Price Trends - Real Data Test</h1>
+
+			<div class="portfolio-content">
+				<h3>Testing with Real API Data</h3>
+				<p>This test uses your actual portfolio data from the API.</p>
+				<div id="portfolioInfo">
+					<p>Loading portfolio data...</p>
+				</div>
+			</div>
+
+			<!-- Price Trends Button -->
+			<button
+				id="priceTrendsBtn"
+				class="price-trends-btn"
+				aria-label="View Portfolio Price Trends"
+			>
+				<svg
+					class="btn-icon"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
+					<path d="M3 3v18h18"></path>
+					<path d="M7 12l4-4 4 4 6-6"></path>
+				</svg>
+				View Portfolio Price Trends (Real Data)
+			</button>
+
+			<div
+				style="
+					margin-top: 20px;
+					padding: 16px;
+					background: #e8f5e8;
+					border-radius: 8px;
+				"
+			>
+				<h4 style="margin: 0 0 8px 0; color: #28a745">
+					✅ Real Data Integration
+				</h4>
+				<p style="margin: 0; color: #155724">
+					This test connects to your actual portfolio API and displays real
+					price trends for your tokens. Make sure your server is running on
+					localhost:8080.
+				</p>
+			</div>
+		</div>
+
+		<!-- Price Trends Modal -->
+		<div
+			id="priceTrendsModal"
+			class="modal"
+			role="dialog"
+			aria-labelledby="modalTitle"
+			aria-hidden="true"
+		>
+			<div class="modal-content">
+				<!-- Modal Header -->
+				<div class="modal-header">
+					<h2 id="modalTitle">Portfolio Price Trends (Real Data)</h2>
+					<button id="closeModal" class="close-btn" aria-label="Close modal">
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<line x1="18" y1="6" x2="6" y2="18"></line>
+							<line x1="6" y1="6" x2="18" y2="18"></line>
+						</svg>
+					</button>
+				</div>
+
+				<!-- Time Period Selector -->
+				<div class="time-selector">
+					<label for="timePeriod">Time Period:</label>
+					<select id="timePeriod" class="time-dropdown">
+						<option value="1d">1 Day</option>
+						<option value="7d" selected>7 Days</option>
+						<option value="30d">30 Days</option>
+						<option value="90d">90 Days</option>
+						<option value="custom">Custom Range</option>
+					</select>
+
+					<!-- Custom Date Range (hidden by default) -->
+					<div id="customRange" class="custom-range" style="display: none">
+						<input type="date" id="startDate" class="date-input" />
+						<span>to</span>
+						<input type="date" id="endDate" class="date-input" />
+						<button id="applyCustomRange" class="apply-btn">Apply</button>
+					</div>
+				</div>
+
+				<!-- Chart Container -->
+				<div class="chart-container">
+					<!-- Loading Indicator -->
+					<div id="loadingIndicator" class="loading-indicator">
+						<div class="spinner"></div>
+						<p>Loading real price data...</p>
+					</div>
+
+					<!-- Error Message -->
+					<div id="errorMessage" class="error-message" style="display: none">
+						<svg
+							class="error-icon"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<circle cx="12" cy="12" r="10"></circle>
+							<line x1="15" y1="9" x2="9" y2="15"></line>
+							<line x1="9" y1="9" x2="15" y2="15"></line>
+						</svg>
+						<p id="errorText">Failed to load price data. Please try again.</p>
+						<button id="retryBtn" class="retry-btn">Retry</button>
+					</div>
+
+					<!-- Chart Canvas -->
+					<canvas id="priceChart" style="display: none"></canvas>
+				</div>
+
+				<!-- Chart Legend and Stats -->
+				<div id="chartStats" class="chart-stats" style="display: none">
+					<div class="stats-grid">
+						<div class="stat-item">
+							<span class="stat-label">Best Performer:</span>
+							<span id="bestPerformer" class="stat-value positive">-</span>
+						</div>
+						<div class="stat-item">
+							<span class="stat-label">Worst Performer:</span>
+							<span id="worstPerformer" class="stat-value negative">-</span>
+						</div>
+						<div class="stat-item">
+							<span class="stat-label">Average Change:</span>
+							<span id="averageChange" class="stat-value">-</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="PortfolioPriceTrends.js"></script>
+
+		<!-- Real data integration script -->
+		<script>
+			console.log('Real data test script loading...')
+
+			// Load and display portfolio info
+			async function loadPortfolioInfo() {
+				try {
+					const response = await fetch('/api/portfolio')
+					const data = await response.json()
+
+					if (data.assets) {
+						const infoDiv = document.getElementById('portfolioInfo')
+						infoDiv.innerHTML = `
+                        <p><strong>Total Value:</strong> $${
+													data.totalValue?.toFixed(2) || 'N/A'
+												}</p>
+                        <p><strong>Assets:</strong> ${
+													data.assets.length
+												} tokens</p>
+                        <p><strong>Top 5 Holdings:</strong></p>
+                        <ul>
+                            ${data.assets
+															.slice(0, 5)
+															.map(
+																asset =>
+																	`<li><strong>${asset.symbol}</strong> - ${
+																		asset.amount?.toFixed(4) || 'N/A'
+																	} (${
+																		asset.value
+																			? '$' + asset.value.toFixed(2)
+																			: 'N/A'
+																	})</li>`
+															)
+															.join('')}
+                        </ul>
+                    `
+					}
+				} catch (error) {
+					console.error('Failed to load portfolio info:', error)
+					document.getElementById('portfolioInfo').innerHTML =
+						'<p style="color: red;">Failed to load portfolio data. Make sure server is running.</p>'
+				}
+			}
+
+			document.addEventListener('DOMContentLoaded', () => {
+				console.log('DOM loaded, setting up real data test...')
+
+				// Load portfolio info
+				loadPortfolioInfo()
+
+				// Wait for the component to initialize
+				setTimeout(() => {
+					if (window.portfolioPriceTrends) {
+						console.log(
+							'PortfolioPriceTrends component found, using real API data'
+						)
+						// The component will automatically load real data from the API
+					} else {
+						console.error('portfolioPriceTrends not found on window object')
+					}
+				}, 500)
+			})
+		</script>
+	</body>
+</html>

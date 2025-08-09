@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Portfolio Price Trends - Working Demo</title>
+		<link rel="stylesheet" href="PortfolioPriceTrends.css" />
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+	</head>
+	<body>
+		<!-- Main Portfolio Page -->
+		<div class="portfolio-container">
+			<h1>My Cryptocurrency Portfolio</h1>
+
+			<!-- Portfolio content -->
+			<div class="portfolio-content">
+				<h3>Portfolio Overview</h3>
+				<p>Total Value: <strong>$3,397.31</strong></p>
+				<p>Assets: <strong>5 tokens</strong></p>
+				<p>24h Change: <strong style="color: #28a745">+2.45%</strong></p>
+
+				<div style="margin-top: 20px">
+					<h4>Top Holdings:</h4>
+					<ul style="list-style: none; padding: 0">
+						<li style="padding: 8px 0; border-bottom: 1px solid #eee">
+							<strong>BTC</strong> - 0.5 BTC ($25,000)
+						</li>
+						<li style="padding: 8px 0; border-bottom: 1px solid #eee">
+							<strong>ETH</strong> - 2.3 ETH ($4,600)
+						</li>
+						<li style="padding: 8px 0; border-bottom: 1px solid #eee">
+							<strong>SOL</strong> - 3.08 SOL ($462)
+						</li>
+						<li style="padding: 8px 0; border-bottom: 1px solid #eee">
+							<strong>BNB</strong> - 0.28 BNB ($168)
+						</li>
+						<li style="padding: 8px 0; border-bottom: 1px solid #eee">
+							<strong>ADA</strong> - 1000 ADA ($500)
+						</li>
+					</ul>
+				</div>
+			</div>
+
+			<!-- Price Trends Button -->
+			<button
+				id="priceTrendsBtn"
+				class="price-trends-btn"
+				aria-label="View Portfolio Price Trends"
+			>
+				<svg
+					class="btn-icon"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
+					<path d="M3 3v18h18"></path>
+					<path d="M7 12l4-4 4 4 6-6"></path>
+				</svg>
+				View Portfolio Price Trends
+			</button>
+
+			<div
+				style="
+					margin-top: 20px;
+					padding: 16px;
+					background: #f8f9fa;
+					border-radius: 8px;
+					border-left: 4px solid #667eea;
+				"
+			>
+				<h4 style="margin: 0 0 8px 0; color: #667eea">📊 Working Demo</h4>
+				<p style="margin: 0; color: #6c757d">
+					Click the button above to view interactive price trends. This demo
+					uses generated data to show the full functionality including:
+				</p>
+				<ul style="color: #6c757d; margin: 8px 0 0 20px">
+					<li>Interactive Chart.js charts</li>
+					<li>Time period selection</li>
+					<li>Performance statistics</li>
+					<li>Responsive modal design</li>
+					<li>Loading and error states</li>
+				</ul>
+			</div>
+		</div>
+
+		<!-- Price Trends Modal -->
+		<div
+			id="priceTrendsModal"
+			class="modal"
+			role="dialog"
+			aria-labelledby="modalTitle"
+			aria-hidden="true"
+		>
+			<div class="modal-content">
+				<!-- Modal Header -->
+				<div class="modal-header">
+					<h2 id="modalTitle">Portfolio Price Trends</h2>
+					<button id="closeModal" class="close-btn" aria-label="Close modal">
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<line x1="18" y1="6" x2="6" y2="18"></line>
+							<line x1="6" y1="6" x2="18" y2="18"></line>
+						</svg>
+					</button>
+				</div>
+
+				<!-- Time Period Selector -->
+				<div class="time-selector">
+					<label for="timePeriod">Time Period:</label>
+					<select id="timePeriod" class="time-dropdown">
+						<option value="1d">1 Day</option>
+						<option value="7d" selected>7 Days</option>
+						<option value="30d">30 Days</option>
+						<option value="90d">90 Days</option>
+						<option value="custom">Custom Range</option>
+					</select>
+
+					<!-- Custom Date Range (hidden by default) -->
+					<div id="customRange" class="custom-range" style="display: none">
+						<input type="date" id="startDate" class="date-input" />
+						<span>to</span>
+						<input type="date" id="endDate" class="date-input" />
+						<button id="applyCustomRange" class="apply-btn">Apply</button>
+					</div>
+				</div>
+
+				<!-- Chart Container -->
+				<div class="chart-container">
+					<!-- Loading Indicator -->
+					<div id="loadingIndicator" class="loading-indicator">
+						<div class="spinner"></div>
+						<p>Loading price data...</p>
+					</div>
+
+					<!-- Error Message -->
+					<div id="errorMessage" class="error-message" style="display: none">
+						<svg
+							class="error-icon"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<circle cx="12" cy="12" r="10"></circle>
+							<line x1="15" y1="9" x2="9" y2="15"></line>
+							<line x1="9" y1="9" x2="15" y2="15"></line>
+						</svg>
+						<p id="errorText">Failed to load price data. Please try again.</p>
+						<button id="retryBtn" class="retry-btn">Retry</button>
+					</div>
+
+					<!-- Chart Canvas -->
+					<canvas id="priceChart" style="display: none"></canvas>
+				</div>
+
+				<!-- Chart Legend and Stats -->
+				<div id="chartStats" class="chart-stats" style="display: none">
+					<div class="stats-grid">
+						<div class="stat-item">
+							<span class="stat-label">Best Performer:</span>
+							<span id="bestPerformer" class="stat-value positive">-</span>
+						</div>
+						<div class="stat-item">
+							<span class="stat-label">Worst Performer:</span>
+							<span id="worstPerformer" class="stat-value negative">-</span>
+						</div>
+						<div class="stat-item">
+							<span class="stat-label">Average Change:</span>
+							<span id="averageChange" class="stat-value">-</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="PortfolioPriceTrends.js"></script>
+
+		<!-- Demo-specific JavaScript -->
+		<script>
+			console.log('Demo script loading...')
+
+			// Override the portfolio tokens for demo purposes
+			document.addEventListener('DOMContentLoaded', () => {
+				console.log('DOM loaded, setting up demo...')
+
+				// Wait for the component to initialize
+				setTimeout(() => {
+					if (window.portfolioPriceTrends) {
+						// Set demo portfolio tokens
+						window.portfolioPriceTrends.portfolioTokens = [
+							{ id: 'BTC', name: 'Bitcoin', amount: 0.5 },
+							{ id: 'ETH', name: 'Ethereum', amount: 2.3 },
+							{ id: 'SOL', name: 'Solana', amount: 3.08 },
+							{ id: 'BNB', name: 'Binance Coin', amount: 0.28 },
+							{ id: 'ADA', name: 'Cardano', amount: 1000 },
+						]
+						console.log(
+							'Demo portfolio tokens loaded:',
+							window.portfolioPriceTrends.portfolioTokens
+						)
+					} else {
+						console.error('portfolioPriceTrends not found on window object')
+					}
+				}, 500)
+			})
+		</script>
+	</body>
+</html>
